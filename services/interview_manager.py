@@ -1,0 +1,66 @@
+
+from services.rag_service import rag_service
+
+
+class InterviewManager:
+
+    def __init__(self, rag=None):
+        self.rag = rag or rag_service
+
+    def process_message(self, question, session, top_k=5):
+
+        if not isinstance(question, str) or not question.strip():
+            raise ValueError("Please provide an interview response.")
+
+        if not isinstance(session, dict):
+            raise ValueError("Interview session is required.")
+
+        if session.get("mode") != "interview":
+            raise ValueError("This is not an interview session.")
+
+        if session.get("status") != "active":
+            raise ValueError("This interview session is no longer active.")
+
+        job_role = session.get("job_role")
+
+        if not job_role:
+            raise ValueError("Interview job role is missing.")
+
+        interview_state = {
+            "job_role": job_role,
+            "current_question": session.get("current_question"),
+            "question_number": session.get("question_number", 0),
+            "status": session.get("status"),
+            "evaluations": session.get("evaluations", []),
+            "total_score": session.get("total_score", 0)
+        }
+
+        conversation_history = session.get(
+            "conversation_history", []
+        )
+
+        response = self.rag.ask(
+            question=question.strip(),
+            mode="interview",
+            top_k=top_k,
+            conversation_history=conversation_history,
+            interview_state=interview_state
+        )
+
+        if not isinstance(response, dict):
+            raise RuntimeError("Invalid response from RAG service.")
+
+        answer = response.get("answer")
+
+        if not answer:
+            raise RuntimeError("The AI interviewer returned an empty response.")
+
+        return {
+            "answer": answer,
+            "model": response.get("model"),
+            "mode": "interview",
+            "sources": response.get("sources", [])
+        }
+
+
+interview_manager = InterviewManager()
