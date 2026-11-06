@@ -1,240 +1,4 @@
-
-# import re
-
-# from services.vector_store import vector_store
-# from services.gemini_service import gemini_service
-
-
-# class RAGService:
-
-#     def __init__(self):
-#         self.vector_store = vector_store
-#         self.gemini_service = gemini_service
-
-#     def clean_response(self, answer):
-#         """
-#         Remove unwanted Markdown horizontal separators
-#         without destroying bold text or other formatting.
-#         """
-#         answer = re.sub(
-#             r"(?m)^\s*([*_ -])\1{2,}\s*$",
-#             "",
-#             answer
-#         )
-
-#         return answer.strip()
-
-#     def build_prompt(self, question, context, mode):
-
-#         common_instructions = """
-# You are an expert ATSWA (Accounting Technicians Scheme
-# West Africa) educational and professional assessment assistant.
-
-# Your knowledge covers:
-# - Financial Accounting
-# - Management Accounting
-# - Auditing and Assurance
-# - Taxation
-# - Business Law
-# - Financial Reporting
-# - Economics and other relevant ATSWA subjects.
-
-# KNOWLEDGE BASE RULES:
-
-# 1. Use the supplied knowledge context as your primary
-#    reference for technical accounting information.
-# 2. Never invent accounting standards, regulations,
-#    tax laws, or examination requirements.
-# 3. If the context does not adequately answer a question,
-#    clearly acknowledge the limitation.
-# 4. Do not expose internal database information.
-# 5. Do not mention chunks, retrieval scores, database IDs,
-#    or internal search operations.
-# 6. Do not fabricate citations, page numbers, or sources.
-# """
-
-#         if mode == "study":
-
-#             mode_instructions = """
-# OPERATING MODE: ATSWA STUDY ASSISTANT
-
-# You are currently in STUDY MODE.
-
-# Your responsibility is to teach and prepare candidates
-# for ATSWA examinations.
-
-# When answering:
-
-# 1. Answer the user's question directly.
-# 2. Explain accounting concepts clearly and accurately.
-# 3. Break complicated topics into understandable sections.
-# 4. Use practical examples when supported by the context.
-# 5. Explain important accounting terminology.
-# 6. Provide examination tips when relevant.
-# 7. Generate practice questions when requested.
-# 8. Explain the correct answers to practice questions.
-
-# IMPORTANT:
-# - Do not ask the user to select an operating mode.
-# - Do not introduce yourself as an interviewer.
-# - Do not turn an ordinary study question into an interview.
-# - Do not ask unnecessary introductory questions.
-# - Begin answering the user's question immediately.
-# """
-
-#         elif mode == "interview":
-
-#             mode_instructions = """
-# OPERATING MODE: ATSWA AI INTERVIEWER
-
-# You are currently conducting an interview for a position
-# that requires ATSWA-related accounting knowledge.
-
-# Your responsibilities:
-
-# 1. Act as a professional accounting and finance interviewer.
-# 2. Ask one question at a time.
-# 3. Wait for the candidate's answer before asking another.
-# 4. Assess technical knowledge, reasoning and judgement.
-# 5. Evaluate the candidate's response fairly.
-# 6. Identify correct points and missing information.
-# 7. Provide constructive feedback after an answer.
-# 8. Score responses out of 10 when appropriate.
-# 9. Adjust difficulty according to candidate performance.
-# 10. Never reveal the expected answer before the candidate
-#     has attempted the question.
-
-# IMPORTANT:
-# - Do not ask the user to select an operating mode.
-# - Start the interview immediately if no interview question
-#   has been asked yet.
-# - Do not provide the answer to your own interview question.
-# """
-
-#         else:
-#             raise ValueError(
-#                 "Invalid mode. Choose 'study' or 'interview'."
-#             )
-
-#         formatting_instructions = """
-# RESPONSE FORMATTING:
-
-# 1. Use professional, readable Markdown.
-# 2. Use headings where necessary.
-# 3. Use bold formatting for important terms.
-# 4. Use numbered lists and bullet points where appropriate.
-# 5. Never use horizontal rules or decorative separators.
-# 6. Avoid unnecessary introductory statements.
-# 7. Avoid repetitive conclusions.
-# 8. Do not generate a separate Sources section.
-#    The application handles source references separately.
-# 9. Keep responses structured and easy to read.
-# """
-
-#         prompt = f"""
-# {common_instructions}
-
-# {mode_instructions}
-
-# {formatting_instructions}
-
-# KNOWLEDGE CONTEXT:
-
-# {context}
-
-# USER QUESTION:
-
-# {question}
-
-# Follow the selected operating mode strictly.
-# """
-
-#         return prompt
-
-#     def ask(self, question, mode="study", top_k=5):
-
-#         if not question or not question.strip():
-#             raise ValueError("Please enter a question.")
-
-#         if mode not in ("study", "interview"):
-#             raise ValueError(
-#                 "Mode must be either 'study' or 'interview'."
-#             )
-
-#         # 1. Retrieve relevant documents
-#         retrieved_documents = self.vector_store.search(
-#             question=question,
-#             top_k=top_k
-#         )
-
-#         if not retrieved_documents:
-#             return {
-#                 "answer": (
-#                     "I could not find sufficient relevant "
-#                     "information in the ATSWA knowledge base "
-#                     "to answer this question."
-#                 ),
-#                 "sources": [],
-#                 "model": None,
-#                 "mode": mode
-#             }
-
-#         # 2. Build the knowledge context
-#         context_parts = []
-
-#         for index, document in enumerate(
-#             retrieved_documents, start=1
-#         ):
-#             context_parts.append(
-#                 f"""
-# Source {index}: {document['source']}
-
-# {document['text']}
-# """
-#             )
-
-#         context = "\n\n".join(context_parts)
-
-#         # 3. Build a prompt for the selected mode
-#         prompt = self.build_prompt(
-#             question=question,
-#             context=context,
-#             mode=mode
-#         )
-
-#         # 4. Generate the response
-#         generation = self.gemini_service.generate(prompt)
-
-#         answer = self.clean_response(generation["answer"])
-
-#         # 5. Prepare unique source references
-#         sources = []
-#         seen_sources = set()
-
-#         for document in retrieved_documents:
-
-#             source_name = document["source"]
-
-#             if source_name not in seen_sources:
-#                 seen_sources.add(source_name)
-
-#                 sources.append({
-#                     "source": source_name
-#                 })
-
-#         # 6. Return the response
-#         return {
-#             "answer": answer,
-#             "model": generation["model"],
-#             "mode": mode,
-#             "sources": sources
-#         }
-
-
-# rag_service = RAGService()
-
-
-import re
+﻿import re
 
 from services.vector_store import vector_store
 from services.gemini_service import gemini_service
@@ -374,12 +138,16 @@ and the student's responses in the conversation.
         elif mode == "interview":
 
             state = interview_state or {}
-
             job_role = state.get(
                 "job_role",
                 "Accounting or Finance Candidate"
             )
 
+            candidate_name = state.get("candidate_name") or "Candidate"
+            candidate_background = (
+                state.get("candidate_background")
+                or "No background information provided."
+            )
             current_question = state.get(
                 "current_question"
             )
@@ -398,9 +166,14 @@ and the student's responses in the conversation.
 OPERATING MODE: ATSWA AI INTERVIEWER
 
 You are conducting a professional accounting interview.
-
 JOB ROLE:
 {job_role}
+
+CANDIDATE NAME:
+{candidate_name}
+
+CANDIDATE BACKGROUND:
+{candidate_background}
 
 INTERVIEW STATUS:
 {status}
@@ -458,10 +231,13 @@ If the candidate asks a follow-up question:
 - Explain the current question further.
 - Do not treat the follow-up as an answer.
 - Do not move to the next question.
-
 If there is no current question:
-- Start the interview with one relevant question.
-
+- Consider the candidate's background and selected job role.
+- Generate exactly ONE relevant opening interview question.
+- Address the candidate by name when available.
+- Do not repeat the onboarding welcome.
+- Do not evaluate or score the onboarding responses.
+- Do not ask multiple questions in the opening response.
 If the candidate says they are ready to continue
 after receiving feedback:
 - Ask the next appropriate interview question.
@@ -518,7 +294,7 @@ Respond to the latest message in the correct operating mode.
 
         return prompt
 
-    def ask(
+    async def ask(
         self,
         question,
         mode="study",
@@ -568,7 +344,7 @@ Respond to the latest message in the correct operating mode.
                 )
 
         # 2. Retrieve relevant ATSWA documents.
-        retrieved_documents = self.vector_store.search(
+        retrieved_documents = await self.vector_store.search(
             question=retrieval_query,
             top_k=top_k
         )
@@ -612,7 +388,7 @@ Source {index}: {document['source']}
         )
 
         # 5. Generate response with Gemini.
-        generation = self.gemini_service.generate(prompt)
+        generation = await self.gemini_service.generate(prompt)
 
         answer = self.clean_response(
             generation["answer"]
@@ -644,3 +420,4 @@ Source {index}: {document['source']}
 
 
 rag_service = RAGService()
+

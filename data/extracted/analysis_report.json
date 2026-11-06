@@ -1,0 +1,93 @@
+{
+    "pdf": "atswa_2026_syllabus.pdf",
+    "total_pages": 114,
+    "expected_papers": {
+        "1": "Basic Accounting",
+        "2": "Economics",
+        "3": "Business Law",
+        "4": "Communication Skills",
+        "5": "Financial Accounting",
+        "6": "Public Sector Accounting",
+        "7": "Quantitative Analysis",
+        "8": "Information Technology",
+        "9": "Principles of Auditing and Assurance",
+        "10": "Cost Accounting",
+        "11": "Taxation",
+        "12": "Management"
+    },
+    "detected_headings": [
+        {
+            "paper_number": 1,
+            "expected_name": "Basic Accounting",
+            "detected_heading": "PAPER 1: BASIC ACCOUNTING\nAim",
+            "page": 11
+        },
+        {
+            "paper_number": 2,
+            "expected_name": "Economics",
+            "detected_heading": "PAPER 2: ECONOMICS \nAim \nThe aim of this paper is to develop candidates",
+            "page": 18
+        },
+        {
+            "paper_number": 3,
+            "expected_name": "Business Law",
+            "detected_heading": "PAPER 3: BUSINESS LAW \nSpecification grid \nThe grid below shows the relative weightings of the main sections within this syllabus and\nshould guide the study time spent on each",
+            "page": 26
+        },
+        {
+            "paper_number": 4,
+            "expected_name": "Communication Skills",
+            "detected_heading": "PAPER 4: COMMUNICATION SKILLS \nAim \nThe aim of this paper is to examine candidates",
+            "page": 33
+        },
+        {
+            "paper_number": 5,
+            "expected_name": "Financial Accounting",
+            "detected_heading": "PAPER 5: FINANCIAL ACCOUNTING \nAims \nThe aim of this paper is to examine candidate",
+            "page": 38
+        },
+        {
+            "paper_number": 6,
+            "expected_name": "Public Sector Accounting",
+            "detected_heading": "PAPER 6: PUBLIC SECTOR ACCOUNTING \nAims \nThe aims of this paper are to examine candidates",
+            "page": 46
+        },
+        {
+            "paper_number": 7,
+            "expected_name": "Quantitative Analysis",
+            "detected_heading": "PAPER 7: QUANTITATIVE ANALYSIS \nLinkage with other related subjects\nObjectives \nOn completion of this paper, candidates should be able to",
+            "page": 56
+        },
+        {
+            "paper_number": 8,
+            "expected_name": "Information Technology",
+            "detected_heading": "PAPER 8:     INFORMATION TECHNOLOGY \nAim\nThe aim of this paper is to develop practical knowledge and understanding of\nthe role of data, information and communication technologies in an\norganisation, with special reference to its finance and accounting functions",
+            "page": 70
+        },
+        {
+            "paper_number": 9,
+            "expected_name": "Principles of Auditing and Assurance",
+            "detected_heading": "PAPER 9: PRINCIPLES OF AUDITING & ASSURANCE \nPART III",
+            "page": 78
+        },
+        {
+            "paper_number": 10,
+            "expected_name": "Cost Accounting",
+            "detected_heading": "PAPER 10 : COST ACCOUNTING \nAim \nThis paper aims to assess candidates' knowledge and comprehension of applying cost\naccounting principles, methods, and techniques to prepare, process, and present\nbasic cost information to assist management in planning, decision-making, and\ncontrol procedures across a range of business contexts",
+            "page": 85
+        },
+        {
+            "paper_number": 11,
+            "expected_name": "Taxation",
+            "detected_heading": "PAPER 11: TAXATION \nAim \nThe aim of this paper is to examine candidates",
+            "page": 93
+        },
+        {
+            "paper_number": 12,
+            "expected_name": "Management",
+            "detected_heading": "PAPER 12: MANAGEMENT \nAim \nThe aim of this paper is to examine the candidates",
+            "page": 104
+        }
+    ],
+    "full_text_file": "C:\\Users\\dell\\OneDrive\\Desktop\\ai-interviewer\\data\\extracted\\full_syllabus.json"
+}

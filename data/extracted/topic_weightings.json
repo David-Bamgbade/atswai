@@ -1,0 +1,616 @@
+[
+    {
+        "paper_number": 1,
+        "subject": "Basic Accounting",
+        "topics": [
+            {
+                "topic": "1. Nature and general framework of accounting",
+                "weighting": 10.0,
+                "pdf_page": 12
+            },
+            {
+                "topic": "2. Forms and structures of private and public entities",
+                "weighting": 10.0,
+                "pdf_page": 13
+            },
+            {
+                "topic": "3. Accounting concepts and conventions",
+                "weighting": 10.0,
+                "pdf_page": 13
+            },
+            {
+                "topic": "4. Accounting processes",
+                "weighting": 20.0,
+                "pdf_page": 14
+            },
+            {
+                "topic": "5. Control accounts",
+                "weighting": 15.0,
+                "pdf_page": 15
+            },
+            {
+                "topic": "6. Payroll accounting",
+                "weighting": 10.0,
+                "pdf_page": 16
+            },
+            {
+                "topic": "7. Preparation of simple financial statements",
+                "weighting": 15.0,
+                "pdf_page": 16
+            },
+            {
+                "topic": "8. Computerised accounting systems",
+                "weighting": 10.0,
+                "pdf_page": 16
+            },
+            {
+                "topic": "6. Payroll accounting",
+                "weighting": 10.0,
+                "pdf_page": 17
+            },
+            {
+                "topic": "7. Preparation of simple financial statements",
+                "weighting": 15.0,
+                "pdf_page": 17
+            },
+            {
+                "topic": "8. Computerised accounting systems",
+                "weighting": 10.0,
+                "pdf_page": 17
+            }
+        ],
+        "topics_detected": 11
+    },
+    {
+        "paper_number": 2,
+        "subject": "Economics",
+        "topics": [
+            {
+                "topic": "1. The Nature and Scope of Economics",
+                "weighting": 5.0,
+                "pdf_page": 20
+            },
+            {
+                "topic": "2. The Price System",
+                "weighting": 10.0,
+                "pdf_page": 20
+            },
+            {
+                "topic": "3. Theory of Consumer Behaviour",
+                "weighting": 5.0,
+                "pdf_page": 21
+            },
+            {
+                "topic": "4. Theory of Production",
+                "weighting": 15.0,
+                "pdf_page": 21
+            },
+            {
+                "topic": "5. Market Structure and Pricing",
+                "weighting": 10.0,
+                "pdf_page": 22
+            },
+            {
+                "topic": "6. National Income",
+                "weighting": 10.0,
+                "pdf_page": 22
+            },
+            {
+                "topic": "7. Money and Financial Institutions",
+                "weighting": 10.0,
+                "pdf_page": 23
+            },
+            {
+                "topic": "8. Fundamentals of Public Finance",
+                "weighting": 10.0,
+                "pdf_page": 23
+            },
+            {
+                "topic": "9. Inflation and Unemployment",
+                "weighting": 5.0,
+                "pdf_page": 23
+            },
+            {
+                "topic": "10. International Trade and Finance",
+                "weighting": 10.0,
+                "pdf_page": 24
+            },
+            {
+                "topic": "11. International and Regional Organisations",
+                "weighting": 5.0,
+                "pdf_page": 24
+            },
+            {
+                "topic": "12. Economic growth and development",
+                "weighting": 5.0,
+                "pdf_page": 25
+            }
+        ],
+        "topics_detected": 12
+    },
+    {
+        "paper_number": 3,
+        "subject": "Business Law",
+        "topics": [
+            {
+                "topic": "The legal system and court system",
+                "weighting": 15.0,
+                "pdf_page": 27
+            },
+            {
+                "topic": "2. Law of contract",
+                "weighting": 20.0,
+                "pdf_page": 28
+            },
+            {
+                "topic": "3. Special contracts",
+                "weighting": 25.0,
+                "pdf_page": 28
+            },
+            {
+                "topic": "4. Law of business associations",
+                "weighting": 25.0,
+                "pdf_page": 29
+            },
+            {
+                "topic": "5. Banking and negotiable instruments",
+                "weighting": 10.0,
+                "pdf_page": 31
+            },
+            {
+                "topic": "6. Law of trusts",
+                "weighting": 5.0,
+                "pdf_page": 31
+            }
+        ],
+        "topics_detected": 6
+    },
+    {
+        "paper_number": 4,
+        "subject": "Communication Skills",
+        "topics": [
+            {
+                "topic": "1. Introduction to communication skills: communication systems, models and networks",
+                "weighting": 20.0,
+                "pdf_page": 34
+            },
+            {
+                "topic": "2. Language skills and grammatical rules",
+                "weighting": 20.0,
+                "pdf_page": 34
+            },
+            {
+                "topic": "3. Practical Application of Communication skills",
+                "weighting": 60.0,
+                "pdf_page": 35
+            }
+        ],
+        "topics_detected": 3
+    },
+    {
+        "paper_number": 5,
+        "subject": "Financial Accounting",
+        "topics": [
+            {
+                "topic": "1. Financial accounting concepts, framework and practices",
+                "weighting": 15.0,
+                "pdf_page": 39
+            },
+            {
+                "topic": "2. Purpose of financial reporting and documentation of business transactions",
+                "weighting": 15.0,
+                "pdf_page": 40
+            },
+            {
+                "topic": "3. Adjustments to accounting records and financial statements",
+                "weighting": 15.0,
+                "pdf_page": 40
+            },
+            {
+                "topic": "4. Accounting for transactions and events",
+                "weighting": 20.0,
+                "pdf_page": 41
+            },
+            {
+                "topic": "of corporate and non-corporate entities",
+                "weighting": 25.0,
+                "pdf_page": 43
+            },
+            {
+                "topic": "information.",
+                "weighting": 10.0,
+                "pdf_page": 44
+            }
+        ],
+        "topics_detected": 6
+    },
+    {
+        "paper_number": 6,
+        "subject": "Public Sector Accounting",
+        "topics": [
+            {
+                "topic": "1.  Public sector accounting framework and concepts",
+                "weighting": 15.0,
+                "pdf_page": 47
+            },
+            {
+                "topic": "2. Planning and budgeting in public sector",
+                "weighting": 20.0,
+                "pdf_page": 49
+            },
+            {
+                "topic": "3. Public sector accounting and financial reporting",
+                "weighting": 45.0,
+                "pdf_page": 50
+            },
+            {
+                "topic": "4. Emerging issues and ethical considerations in public sector accounting",
+                "weighting": 10.0,
+                "pdf_page": 53
+            },
+            {
+                "topic": "5. Public sector audit",
+                "weighting": 10.0,
+                "pdf_page": 54
+            }
+        ],
+        "topics_detected": 5
+    },
+    {
+        "paper_number": 7,
+        "subject": "Quantitative Analysis",
+        "topics": [
+            {
+                "topic": "a. Handling of statistical data",
+                "weighting": 10.0,
+                "pdf_page": 58
+            },
+            {
+                "topic": "b. Measures of location (grouped and ungrouped data)",
+                "weighting": 5.0,
+                "pdf_page": 59
+            },
+            {
+                "topic": "c. Measures of variation/dispersion/spread (grouped and ungrouped data)",
+                "weighting": 5.0,
+                "pdf_page": 60
+            },
+            {
+                "topic": "d. Measures of relationship",
+                "weighting": 5.0,
+                "pdf_page": 60
+            },
+            {
+                "topic": "e. Times series",
+                "weighting": 5.0,
+                "pdf_page": 61
+            },
+            {
+                "topic": "f. Index numbers",
+                "weighting": 2.0,
+                "pdf_page": 61
+            },
+            {
+                "topic": "g. Probability",
+                "weighting": 5.0,
+                "pdf_page": 62
+            },
+            {
+                "topic": "h. Test of hypothesis",
+                "weighting": 3.0,
+                "pdf_page": 62
+            },
+            {
+                "topic": "a. Profit and loss based on sales",
+                "weighting": 4.0,
+                "pdf_page": 63
+            },
+            {
+                "topic": "b. Set theory as applied to business",
+                "weighting": 2.0,
+                "pdf_page": 64
+            },
+            {
+                "topic": "c. Functional relationship",
+                "weighting": 2.0,
+                "pdf_page": 64
+            },
+            {
+                "topic": "d. Mathematics of finance",
+                "weighting": 10.0,
+                "pdf_page": 64
+            },
+            {
+                "topic": "e. Differentiation",
+                "weighting": 1.0,
+                "pdf_page": 65
+            },
+            {
+                "topic": "f. Integration",
+                "weighting": 1.0,
+                "pdf_page": 65
+            },
+            {
+                "topic": "a. Introduction",
+                "weighting": 1.0,
+                "pdf_page": 66
+            },
+            {
+                "topic": "c. Inventory and production control",
+                "weighting": 4.0,
+                "pdf_page": 67
+            },
+            {
+                "topic": "d. Network analysis",
+                "weighting": 6.0,
+                "pdf_page": 67
+            },
+            {
+                "topic": "e. Replacement analysis",
+                "weighting": 4.0,
+                "pdf_page": 67
+            },
+            {
+                "topic": "f. Transportation and assignment models",
+                "weighting": 10.0,
+                "pdf_page": 68
+            },
+            {
+                "topic": "g. Simulation",
+                "weighting": 6.0,
+                "pdf_page": 68
+            }
+        ],
+        "topics_detected": 20
+    },
+    {
+        "paper_number": 8,
+        "subject": "Information Technology",
+        "topics": [
+            {
+                "topic": "1. Basic concepts",
+                "weighting": 14.0,
+                "pdf_page": 71
+            },
+            {
+                "topic": "2. Hardware fundamentals",
+                "weighting": 17.0,
+                "pdf_page": 72
+            },
+            {
+                "topic": "3. Software fundamentals",
+                "weighting": 17.0,
+                "pdf_page": 72
+            },
+            {
+                "topic": "4. Information processing",
+                "weighting": 17.0,
+                "pdf_page": 74
+            },
+            {
+                "topic": "5. Computer networks and data communication",
+                "weighting": 17.0,
+                "pdf_page": 75
+            },
+            {
+                "topic": "6. Systems development, security and issues in management of information",
+                "weighting": 18.0,
+                "pdf_page": 76
+            }
+        ],
+        "topics_detected": 6
+    },
+    {
+        "paper_number": 9,
+        "subject": "Principles of Auditing and Assurance",
+        "topics": [
+            {
+                "topic": "A. Meaning of auditing, legal framework, regulations, and theory",
+                "weighting": 20.0,
+                "pdf_page": 80
+            },
+            {
+                "topic": "B. Assurance process planning, evidence gathering and procedures",
+                "weighting": 12.0,
+                "pdf_page": 80
+            },
+            {
+                "topic": "C. Internal control",
+                "weighting": 12.0,
+                "pdf_page": 81
+            },
+            {
+                "topic": "D. Public sector assurance",
+                "weighting": 12.0,
+                "pdf_page": 81
+            },
+            {
+                "topic": "E. IT-based system assurance",
+                "weighting": 12.0,
+                "pdf_page": 82
+            },
+            {
+                "topic": "G. Assurance completion procedures",
+                "weighting": 20.0,
+                "pdf_page": 82
+            }
+        ],
+        "topics_detected": 6
+    },
+    {
+        "paper_number": 10,
+        "subject": "Cost Accounting",
+        "topics": [
+            {
+                "topic": "1. Introduction to cost accounting",
+                "weighting": 10.0,
+                "pdf_page": 87
+            },
+            {
+                "topic": "2. Cost classification, codification, and segregation",
+                "weighting": 5.0,
+                "pdf_page": 87
+            },
+            {
+                "topic": "3. Elements of cost",
+                "weighting": 25.0,
+                "pdf_page": 88
+            },
+            {
+                "topic": "4. Interlocking and integrated accounts",
+                "weighting": 5.0,
+                "pdf_page": 89
+            },
+            {
+                "topic": "5. Costing methods",
+                "weighting": 15.0,
+                "pdf_page": 89
+            },
+            {
+                "topic": "6. Performance measurement",
+                "weighting": 15.0,
+                "pdf_page": 90
+            },
+            {
+                "topic": "7. Other costing techniques and decision-making tools",
+                "weighting": 15.0,
+                "pdf_page": 91
+            },
+            {
+                "topic": "8. Developments in cost accounting",
+                "weighting": 5.0,
+                "pdf_page": 92
+            },
+            {
+                "topic": "9. Cost reduction and control",
+                "weighting": 5.0,
+                "pdf_page": 92
+            }
+        ],
+        "topics_detected": 9
+    },
+    {
+        "paper_number": 11,
+        "subject": "Taxation",
+        "topics": [
+            {
+                "topic": "1. Introduction to taxation",
+                "weighting": 10.0,
+                "pdf_page": 95
+            },
+            {
+                "topic": "2. Administration of taxes and ethics",
+                "weighting": 15.0,
+                "pdf_page": 95
+            },
+            {
+                "topic": "3. Value added tax (VAT) and stamp duties",
+                "weighting": 10.0,
+                "pdf_page": 96
+            },
+            {
+                "topic": "4. Withholding tax (WHT), and customs and excise duty",
+                "weighting": 5.0,
+                "pdf_page": 98
+            },
+            {
+                "topic": "5. Personal income tax (PIT)",
+                "weighting": 20.0,
+                "pdf_page": 98
+            },
+            {
+                "topic": "6. Companies income tax (CIT)",
+                "weighting": 20.0,
+                "pdf_page": 101
+            },
+            {
+                "topic": "7. Taxation of specialised businesses",
+                "weighting": 5.0,
+                "pdf_page": 101
+            },
+            {
+                "topic": "8. Tertiary education tax (TET)",
+                "weighting": 5.0,
+                "pdf_page": 102
+            },
+            {
+                "topic": "9. Capital gains tax (CGT)",
+                "weighting": 5.0,
+                "pdf_page": 102
+            },
+            {
+                "topic": "10. Application of information technology in taxation",
+                "weighting": 5.0,
+                "pdf_page": 103
+            }
+        ],
+        "topics_detected": 10
+    },
+    {
+        "paper_number": 12,
+        "subject": "Management",
+        "topics": [
+            {
+                "topic": "1. Nature of business",
+                "weighting": 14.0,
+                "pdf_page": 105
+            },
+            {
+                "topic": "2. Management theories and thoughts",
+                "weighting": 13.0,
+                "pdf_page": 106
+            },
+            {
+                "topic": "3. Management process",
+                "weighting": 14.0,
+                "pdf_page": 107
+            },
+            {
+                "topic": "4. Organic business functions",
+                "weighting": 16.0,
+                "pdf_page": 108
+            },
+            {
+                "topic": "(5) Managing of work relationships.",
+                "weighting": 14.0,
+                "pdf_page": 110
+            },
+            {
+                "topic": "(6) Business process re-engineering",
+                "weighting": 4.0,
+                "pdf_page": 111
+            },
+            {
+                "topic": "a. Organisational effectiveness",
+                "weighting": 5.0,
+                "pdf_page": 111
+            },
+            {
+                "topic": "(7) Office practice and procedure, health and safety",
+                "weighting": 7.0,
+                "pdf_page": 112
+            },
+            {
+                "topic": "(8) Workplace Couple",
+                "weighting": 3.0,
+                "pdf_page": 112
+            },
+            {
+                "topic": "10 Remote Work",
+                "weighting": 3.0,
+                "pdf_page": 112
+            },
+            {
+                "topic": "11. Mentoring",
+                "weighting": 4.0,
+                "pdf_page": 112
+            },
+            {
+                "topic": "12. Entrepreneurship",
+                "weighting": 3.0,
+                "pdf_page": 113
+            }
+        ],
+        "topics_detected": 12
+    }
+]

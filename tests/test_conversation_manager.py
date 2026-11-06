@@ -1,10 +1,11 @@
+import asyncio
 
 from services.conversation_manager import ConversationManager
 
 
 class MockStudyManager:
 
-    def process_message(self, question, session, top_k=5):
+    async def process_message(self, question, session, top_k=5):
         return {
             "answer": "This is a study response.",
             "model": "test-model",
@@ -15,7 +16,7 @@ class MockStudyManager:
 
 class MockInterviewManager:
 
-    def process_message(self, question, session, top_k=5):
+    async def process_message(self, question, session, top_k=5):
         assert session["job_role"] == "Internal Auditor"
 
         return {
@@ -26,7 +27,7 @@ class MockInterviewManager:
         }
 
 
-def test_conversation_manager():
+async def test_conversation_manager():
 
     manager = ConversationManager()
 
@@ -38,14 +39,13 @@ def test_conversation_manager():
     # Test study session routing.
     study_session = manager.create_session(mode="study")
 
-    study_response = manager.process_message(
+    study_response = await manager.process_message(
         session_id=study_session["session_id"],
         question="Explain depreciation."
     )
 
     assert study_response["mode"] == "study"
     assert study_response["answer"] == "This is a study response."
-
     assert len(study_response["conversation_history"]) == 2
 
     # Test interview session routing.
@@ -54,7 +54,7 @@ def test_conversation_manager():
         job_role="Internal Auditor"
     )
 
-    interview_response = manager.process_message(
+    interview_response = await manager.process_message(
         session_id=interview_session["session_id"],
         question="What is internal auditing?"
     )
@@ -63,7 +63,6 @@ def test_conversation_manager():
     assert interview_response["answer"] == (
         "This is an interview response. Score: 8/10."
     )
-
     assert len(interview_response["conversation_history"]) == 2
 
     # Confirm both sessions remain independently stored.
@@ -72,8 +71,8 @@ def test_conversation_manager():
 
     print("Study response:", study_response["answer"])
     print("Interview response:", interview_response["answer"])
-    print("\nAll conversation manager tests passed.")
+    print("\\nAll conversation manager tests passed.")
 
 
 if __name__ == "__main__":
-    test_conversation_manager()
+    asyncio.run(test_conversation_manager())

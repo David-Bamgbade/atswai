@@ -1,0 +1,132 @@
+    def _handle_interview_onboarding(self, session_id, message):
+        """Handle interview onboarding without invoking RAG or scoring."""
+
+        text = message.strip()
+        normalized = text.lower()
+
+        with self.lock:
+            session = self.sessions.get(session_id)
+
+            if session is None:
+                raise ValueError("Conversation session not found.")
+
+            if session.get("status") != "active":
+                raise ValueError("This conversation has been completed.")
+
+            stage = session.get("interview_stage")
+
+            user_message = {
+                "role": "user",
+                "content": text,
+                "timestamp": datetime.now(timezone.utc).isoformat()
+            }
+
+            session["conversation_history"].append(user_message)
+
+            if stage == "awaiting_name":
+
+                if normalized not in (
+                    "skip",
+                    "prefer not to say",
+                    "rather not say",
+                    "no",
+                    "anonymous"
+                ):
+                    session["candidate_name"] = text
+
+                session["interview_stage"] = "awaiting_role"
+
+                answer = (
+                    "Thank you. Which role or position are you "
+                    "interviewing for? For example, Staff Accountant, "
+                    "Financial Analyst, or Audit Associate."
+                )
+
+            elif stage == "awaiting_role":
+
+                if normalized in (
+                    "skip",
+                    "none",
+                    "no",
+                    "not sure"
+                ):
+                    answer = (
+                        "I need a target role to conduct a relevant "
+                        "interview. Which position would you like "
+                        "to practise for?"
+                    )
+                else:
+                    session["job_role"] = text
+                    session["interview_stage"] = "awaiting_background"
+
+                    answer = (
+                        f"Understood. You're interviewing for "
+                        f"{text}. Briefly tell me about your "
+                        "education, professional experience, or "
+                        "relevant skills. You can also say "
+                        "'skip' if you prefer."
+                    )
+
+            elif stage == "awaiting_background":
+
+                if normalized not in (
+                    "skip",
+                    "prefer not to say",
+                    "no",
+                    "none"
+                ):
+                    session["candidate_background"] = text
+
+                session["interview_stage"] = "awaiting_readiness"
+
+                answer = (
+                    "Thank you. I have the information I need. "
+                    "Are you ready to begin your interview?"
+                )
+
+            elif stage == "awaiting_readiness":
+
+                if normalized in (
+                    "yes",
+                    "yes i'm ready",
+                    "yes i am ready",
+                    "ready",
+                    "let's begin",
+                    "lets begin",
+                    "start",
+                    "begin"
+                ):
+                    session["candidate_ready"] = True
+                    session["interview_stage"] = "in_progress"
+
+                    answer = None
+
+                else:
+                    answer = (
+                        "No problem. Take your time. Tell me when "
+                        "you're ready to begin."
+                    )
+
+            else:
+                raise ValueError(
+                    "The interview is not in an onboarding stage."
+                )
+
+            if answer:
+                assistant_message = {
+                    "role": "assistant",
+                    "content": answer,
+                    "timestamp": datetime.now(timezone.utc).isoformat()
+                }
+
+                session["conversation_history"].append(
+                    assistant_message
+                )
+
+            return {
+                "answer": answer,
+                "stage": session["interview_stage"],
+                "ready_to_start": (
+                    session["interview_stage"] == "in_progress"
+                )
+            }

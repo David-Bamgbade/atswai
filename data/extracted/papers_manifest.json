@@ -1,0 +1,102 @@
+{
+    "source": "atswa_2026_syllabus.pdf",
+    "total_papers": 12,
+    "papers": [
+        {
+            "paper_number": 1,
+            "subject": "Basic Accounting",
+            "start_page": 11,
+            "end_page": 17,
+            "total_pages": 7,
+            "file": "C:\\Users\\dell\\OneDrive\\Desktop\\ai-interviewer\\data\\extracted\\papers\\paper_01_basic_accounting.json"
+        },
+        {
+            "paper_number": 2,
+            "subject": "Economics",
+            "start_page": 18,
+            "end_page": 25,
+            "total_pages": 8,
+            "file": "C:\\Users\\dell\\OneDrive\\Desktop\\ai-interviewer\\data\\extracted\\papers\\paper_02_economics.json"
+        },
+        {
+            "paper_number": 3,
+            "subject": "Business Law",
+            "start_page": 26,
+            "end_page": 32,
+            "total_pages": 7,
+            "file": "C:\\Users\\dell\\OneDrive\\Desktop\\ai-interviewer\\data\\extracted\\papers\\paper_03_business_law.json"
+        },
+        {
+            "paper_number": 4,
+            "subject": "Communication Skills",
+            "start_page": 33,
+            "end_page": 37,
+            "total_pages": 5,
+            "file": "C:\\Users\\dell\\OneDrive\\Desktop\\ai-interviewer\\data\\extracted\\papers\\paper_04_communication_skills.json"
+        },
+        {
+            "paper_number": 5,
+            "subject": "Financial Accounting",
+            "start_page": 38,
+            "end_page": 45,
+            "total_pages": 8,
+            "file": "C:\\Users\\dell\\OneDrive\\Desktop\\ai-interviewer\\data\\extracted\\papers\\paper_05_financial_accounting.json"
+        },
+        {
+            "paper_number": 6,
+            "subject": "Public Sector Accounting",
+            "start_page": 46,
+            "end_page": 55,
+            "total_pages": 10,
+            "file": "C:\\Users\\dell\\OneDrive\\Desktop\\ai-interviewer\\data\\extracted\\papers\\paper_06_public_sector_accounting.json"
+        },
+        {
+            "paper_number": 7,
+            "subject": "Quantitative Analysis",
+            "start_page": 56,
+            "end_page": 69,
+            "total_pages": 14,
+            "file": "C:\\Users\\dell\\OneDrive\\Desktop\\ai-interviewer\\data\\extracted\\papers\\paper_07_quantitative_analysis.json"
+        },
+        {
+            "paper_number": 8,
+            "subject": "Information Technology",
+            "start_page": 70,
+            "end_page": 77,
+            "total_pages": 8,
+            "file": "C:\\Users\\dell\\OneDrive\\Desktop\\ai-interviewer\\data\\extracted\\papers\\paper_08_information_technology.json"
+        },
+        {
+            "paper_number": 9,
+            "subject": "Principles of Auditing and Assurance",
+            "start_page": 78,
+            "end_page": 84,
+            "total_pages": 7,
+            "file": "C:\\Users\\dell\\OneDrive\\Desktop\\ai-interviewer\\data\\extracted\\papers\\paper_09_principles_of_auditing_and_assurance.json"
+        },
+        {
+            "paper_number": 10,
+            "subject": "Cost Accounting",
+            "start_page": 85,
+            "end_page": 92,
+            "total_pages": 8,
+            "file": "C:\\Users\\dell\\OneDrive\\Desktop\\ai-interviewer\\data\\extracted\\papers\\paper_10_cost_accounting.json"
+        },
+        {
+            "paper_number": 11,
+            "subject": "Taxation",
+            "start_page": 93,
+            "end_page": 103,
+            "total_pages": 11,
+            "file": "C:\\Users\\dell\\OneDrive\\Desktop\\ai-interviewer\\data\\extracted\\papers\\paper_11_taxation.json"
+        },
+        {
+            "paper_number": 12,
+            "subject": "Management",
+            "start_page": 104,
+            "end_page": 114,
+            "total_pages": 11,
+            "file": "C:\\Users\\dell\\OneDrive\\Desktop\\ai-interviewer\\data\\extracted\\papers\\paper_12_management.json"
+        }
+    ]
+}

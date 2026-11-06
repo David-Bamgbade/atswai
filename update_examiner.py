@@ -1,0 +1,465 @@
+﻿from pathlib import Path
+import re
+import shutil
+from datetime import datetime
+
+path = Path("services/examiner_manager.py")
+source = path.read_text(encoding="utf-8")
+backup = path.with_name(
+    path.name + ".backup-" + datetime.now().strftime("%Y%m%d-%H%M%S")
+)
+shutil.copy2(path, backup)
+
+def replace_method(text, name, replacement):
+    pattern = rf"(?ms)^    def {re.escape(name)}\(.*?(?=^    def |^def GEMINI_MODEL_NAME|\Z)"
+    updated, count = re.subn(pattern, replacement.rstrip() + "\n\n", text, count=1)
+    if count != 1:
+        raise RuntimeError(f"Could not safely locate method: {name}")
+    return updated
+
+retrieve = '''    def _retrieve_context(self, allocation):
+        topics = set()
+
+        for section in allocation["sections"]:
+            for item in section["questions"]:
+                if item.get("topic"):
+                    topics.add(item["topic"])
+
+                for topic_item in item.get("topics", []):
+                    if isinstance(topic_item, dict) and topic_item.get("topic"):
+                        topics.add(topic_item["topic"])
+
+        context = {}
+
+        for topic in sorted(topics):
+            try:
+                results = vector_store.search(topic, top_k=2)
+                context[topic] = [
+                    {
+                        "source": result.get("source", "Unknown"),
+                        "text": result.get("text", "")[:2200]
+                    }
+                    for result in results
+                    if result.get("text")
+                ]
+            except Exception as error:
+                print(f"Retrieval failed for {topic}: {error}")
+                context[topic] = []
+
+        return context
+'''
+
+structured = '''    def _generate_structured_question(self, item, context, section_name="B"):
+        number = item["question_number"]
+        topic = item.get("topic", " / ".join(
+            entry.get("topic", "") for entry in item.get("topics", [])
+        ))
+        marks = float(item["marks"])
+
+        instructions = f"""
+Generate exactly ONE ATSWA structured examination question.
+
+Question number: {number}
+Section: {section_name}
+Topic: {topic}
+Total marks: {marks}
+
+The question must contain meaningful sub-questions.
+The sub-question marks must add up to exactly {marks}.
+
+Generate one answer-key entry with a detailed marking guide.
+
+The marking_guide MUST be a JSON ARRAY of objects.
+Each object must contain:
+- part: the sub-question letter
+- criteria: detailed expected answer and marking criteria
+- marks: numeric marks
+
+The marking guide marks must add up to exactly {marks}.
+Do not generate additional questions.
+"""
+
+        batch = self._generate_batch(instructions, item, context)
+
+        if len(batch["questions"]) != 1 or len(batch["answer_key"]) != 1:
+            raise ValueError(
+                f"Section {section_name}, question {number}: "
+                "expected exactly one question and one answer key."
+            )
+
+        question = batch["questions"][0]
+        answer = batch["answer_key"][0]
+
+        question["number"] = number
+        question["topic"] = topic
+        question["type"] = "structured"
+        question["marks"] = marks
+
+        answer["section"] = section_name
+        answer["question_number"] = number
+        answer["question_type"] = "structured"
+        answer["total_marks"] = marks
+
+        return question, answer
+
+    def _generate_section_specific_question(self, item, context, section_name):
+        number = item.get("question_number", 1)
+        marks = float(item["marks"])
+        topics = item.get("topics", [])
+        topic_names = [
+            entry.get("topic", "")
+            for entry in topics
+            if isinstance(entry, dict) and entry.get("topic")
+        ]
+
+        instructions = f"""
+Generate exactly ONE compulsory ATSWA Communication Skills
+comprehension OR summary examination exercise.
+
+Section: {section_name}
+Question number: {number}
+Total marks: {marks}
+Relevant syllabus topics:
+{json.dumps(topic_names, ensure_ascii=False)}
+
+Create an original, realistic passage suitable for an ATSWA examination.
+The passage must be included in the question JSON as "passage".
+Do not claim that the passage is an official ICAN passage.
+
+Create one clear examination task based on the passage.
+The task must be represented by "question".
+If the task has sub-parts, use "sub_questions", each with:
+- "part": a, b, c, etc.
+- "question": the instruction
+- "marks": numeric marks
+
+If the task is a single summary response, use one sub-question.
+The sub-question marks must total exactly {marks}.
+
+The answer key must contain one entry with:
+- "expected_answer"
+- "marking_guide": a JSON array
+Each marking-guide object must contain "part", "criteria", and numeric "marks".
+The marking-guide marks must total exactly {marks}.
+
+Return exactly one question and one answer-key entry.
+Use the supplied reference material as the primary academic guidance.
+"""
+
+        batch = self._generate_batch(instructions, item, context)
+
+        if len(batch["questions"]) != 1 or len(batch["answer_key"]) != 1:
+            raise ValueError(
+                "Section-specific exercise must produce exactly "
+                "one question and one answer key."
+            )
+
+        question = batch["questions"][0]
+        answer = batch["answer_key"][0]
+
+        question["number"] = number
+        question["topic"] = "Comprehension or summary"
+        question["type"] = "structured"
+        question["marks"] = marks
+
+        if not question.get("passage"):
+            raise ValueError("The comprehension/summary exercise has no passage.")
+
+        if not question.get("sub_questions"):
+            raise ValueError(
+                "The comprehension/summary exercise has no answer task."
+            )
+
+        answer["section"] = section_name
+        answer["question_number"] = number
+        answer["question_type"] = "structured"
+        answer["total_marks"] = marks
+
+        return question, answer
+'''
+
+validator = '''    def _validate_paper(self, paper, allocation):
+        generated_sections = paper.get("sections", [])
+        allocated_sections = allocation.get("sections", [])
+
+        if len(generated_sections) != len(allocated_sections):
+            raise ValueError("Generated section count is incorrect.")
+
+        expected_keys = set()
+
+        for allocated, generated in zip(allocated_sections, generated_sections):
+            section_name = str(allocated["name"])
+
+            if str(generated.get("name")) != section_name:
+                raise ValueError(f"Section order/name mismatch for {section_name}.")
+
+            allocated_items = allocated.get("questions", [])
+            generated_questions = generated.get("questions", [])
+
+            expected_mcq = sum(
+                item.get("question_count", 0)
+                for item in allocated_items
+                if item.get("question_type") == "multiple_choice"
+            )
+            expected_short = sum(
+                item.get("question_count", 0)
+                for item in allocated_items
+                if item.get("question_type") == "short_answer"
+            )
+            expected_structured = sum(
+                1 for item in allocated_items
+                if item.get("question_type") in ("structured", "section_specific")
+            )
+
+            actual_mcq = [
+                q for q in generated_questions
+                if q.get("type") == "multiple_choice"
+            ]
+            actual_short = [
+                q for q in generated_questions
+                if q.get("type") == "short_answer"
+            ]
+            actual_structured = [
+                q for q in generated_questions
+                if q.get("type") == "structured"
+            ]
+
+            if len(actual_mcq) != expected_mcq:
+                raise ValueError(
+                    f"Section {section_name}: expected {expected_mcq} MCQs, "
+                    f"received {len(actual_mcq)}."
+                )
+
+            if len(actual_short) != expected_short:
+                raise ValueError(
+                    f"Section {section_name}: expected {expected_short} "
+                    f"short answers, received {len(actual_short)}."
+                )
+
+            if len(actual_structured) != expected_structured:
+                raise ValueError(
+                    f"Section {section_name}: expected {expected_structured} "
+                    f"structured questions, received {len(actual_structured)}."
+                )
+
+            for question in actual_mcq:
+                if set(question.get("options", {}).keys()) != {"A", "B", "C", "D"}:
+                    raise ValueError(
+                        f"Section {section_name}, MCQ {question.get('number')} "
+                        "does not have exactly four options."
+                    )
+                expected_keys.add((
+                    section_name, "multiple_choice", question["number"]
+                ))
+
+            for question in actual_short:
+                expected_keys.add((
+                    section_name, "short_answer", question["number"]
+                ))
+
+            for question in actual_structured:
+                number = question["number"]
+                maximum = float(question["marks"])
+                sub_questions = question.get("sub_questions", [])
+
+                sub_marks = sum(
+                    float(part.get("marks", 0))
+                    for part in sub_questions
+                )
+
+                if not sub_questions or abs(sub_marks - maximum) > 0.01:
+                    raise ValueError(
+                        f"Section {section_name}, question {number}: "
+                        "sub-question marks do not match the question total."
+                    )
+
+                expected_keys.add((section_name, "structured", number))
+
+        answer_keys = paper.get("answer_key", [])
+        actual_keys = set()
+
+        for entry in answer_keys:
+            identity = (
+                str(entry.get("section")),
+                entry.get("question_type"),
+                entry.get("question_number")
+            )
+
+            if identity in actual_keys:
+                raise ValueError(f"Duplicate answer key: {identity}")
+
+            actual_keys.add(identity)
+
+            if entry.get("question_type") == "multiple_choice":
+                if entry.get("correct_answer") not in ("A", "B", "C", "D"):
+                    raise ValueError(
+                        f"Invalid MCQ answer in Section {identity[0]}, "
+                        f"question {identity[2]}."
+                    )
+
+        if actual_keys != expected_keys:
+            raise ValueError(
+                "Answer keys do not match generated questions. "
+                f"Missing: {expected_keys - actual_keys}; "
+                f"unexpected: {actual_keys - expected_keys}"
+            )
+
+        for section in generated_sections:
+            section_name = str(section["name"])
+
+            for question in section.get("questions", []):
+                if question.get("type") != "structured":
+                    continue
+
+                entry = next(
+                    (
+                        item for item in answer_keys
+                        if str(item.get("section")) == section_name
+                        and str(item.get("question_number")) == str(question["number"])
+                    ),
+                    None
+                )
+
+                if entry is None:
+                    raise ValueError(
+                        f"Missing marking guide for {section_name}-{question['number']}."
+                    )
+
+                guide = entry.get("marking_guide", [])
+                guide_marks = sum(
+                    float(point.get("marks", 0))
+                    for point in guide
+                    if isinstance(point, dict)
+                )
+
+                if not guide or abs(guide_marks - float(question["marks"])) > 0.01:
+                    raise ValueError(
+                        f"Marking guide total is incorrect for "
+                        f"{section_name}-{question['number']}."
+                    )
+
+        return True
+'''
+
+generator = '''    def generate_exam(self, paper_number, exam_version=1):
+        allocation = self.allocator.allocate(
+            paper_number,
+            exam_version=exam_version
+        )
+
+        context = self._retrieve_context(allocation)
+
+        if not any(context.values()):
+            raise RuntimeError(
+                "No reference material was retrieved from Pinecone. "
+                "Generation stopped."
+            )
+
+        generated_sections = []
+        all_answer_keys = []
+
+        for section_allocation in allocation["sections"]:
+            section_name = str(section_allocation["name"])
+            items = section_allocation.get("questions", [])
+
+            print(f"Generating Section {section_name}...")
+
+            questions = []
+            section_answers = []
+
+            if section_name == "A":
+                mcq_items = [
+                    item for item in items
+                    if item.get("question_type") == "multiple_choice"
+                ]
+                short_items = [
+                    item for item in items
+                    if item.get("question_type") == "short_answer"
+                ]
+
+                mcqs, mcq_answers = self._generate_section_a_batch(
+                    "multiple_choice", mcq_items, context
+                )
+                short_questions, short_answers = self._generate_section_a_batch(
+                    "short_answer",
+                    short_items,
+                    context,
+                    start_number=len(mcqs) + 1
+                )
+
+                questions = mcqs + short_questions
+                section_answers = mcq_answers + short_answers
+
+            else:
+                for item in items:
+                    question_type = item.get("question_type")
+
+                    if question_type == "section_specific":
+                        question, answer = self._generate_section_specific_question(
+                            item, context, section_name
+                        )
+                    elif question_type == "structured":
+                        question, answer = self._generate_structured_question(
+                            item, context, section_name
+                        )
+                    else:
+                        raise ValueError(
+                            f"Unsupported allocation type in Section "
+                            f"{section_name}: {question_type}"
+                        )
+
+                    questions.append(question)
+                    section_answers.append(answer)
+
+            section = {
+                "name": section_name,
+                "description": section_allocation.get("description"),
+                "total_marks": section_allocation.get("total_marks"),
+                "questions": questions
+            }
+
+            for field in (
+                "questions_available",
+                "questions_to_answer",
+                "marks_offered",
+                "marks_attempted"
+            ):
+                if field in section_allocation:
+                    section[field] = section_allocation[field]
+
+            generated_sections.append(section)
+            all_answer_keys.extend(section_answers)
+
+        paper = {
+            "paper_number": allocation["paper_number"],
+            "subject": allocation["subject"],
+            "duration_minutes": allocation["duration_minutes"],
+            "total_marks": allocation["total_marks"],
+            "exam_version": exam_version,
+            "sections": generated_sections,
+            "answer_key": all_answer_keys,
+            "generation_model": GEMINI_MODEL_NAME(),
+            "reference_sources": sorted({
+                item["source"]
+                for topic_items in context.values()
+                for item in topic_items
+            })
+        }
+
+        self._validate_paper(paper, allocation)
+
+        print("Exam generation and structural validation completed.")
+        return paper
+'''
+
+try:
+    source = replace_method(source, "_retrieve_context", retrieve)
+    source = replace_method(source, "_generate_structured_question", structured)
+    source = replace_method(source, "_validate_paper", validator)
+    source = replace_method(source, "generate_exam", generator)
+    path.write_text(source, encoding="utf-8")
+except Exception:
+    shutil.copy2(backup, path)
+    raise
+
+print(f"Updated successfully. Backup: {backup}")

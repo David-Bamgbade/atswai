@@ -1,4 +1,4 @@
-import os
+﻿import os
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -15,9 +15,19 @@ GEMINI_MODELS = [
     model.strip()
     for model in os.getenv(
         "GEMINI_MODELS",
-        "gemini-2.5-flash,gemini-2.5-flash-lite,gemini-2.0-flash"
+        "gemini-3.5-flash-lite,gemini-3.8-flash,gemini-3.1-flash-lite"
+    ).split(",")
+    if model.strip()
+]
+
+GEMINI_LIVE_MODELS = [
+    model.strip()
+    for model in os.getenv(
+        "GEMINI_LIVE_MODELS",
+        ""
     ).split(",")
     if model.strip()
 ]
 
 MODEL_NAME = GEMINI_MODELS[0]
+

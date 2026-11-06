@@ -1,5 +1,4 @@
-
-from datetime import datetime, timezone
+﻿from datetime import datetime, timezone
 from threading import Lock
 import uuid
 
@@ -10,7 +9,6 @@ class ConversationManager:
         self.sessions = {}
         self.lock = Lock()
 
-        # Managers are connected later through initialize_managers().
         self.study_manager = None
         self.interview_manager = None
 
@@ -26,14 +24,16 @@ class ConversationManager:
             raise ValueError("Invalid conversation mode.")
 
         if mode == "interview":
-            if not isinstance(job_role, str) or not job_role.strip():
-                raise ValueError(
-                    "A job role is required for interview mode."
-                )
+            if job_role is not None:
+                if not isinstance(job_role, str) or not job_role.strip():
+                    raise ValueError("Invalid interview job role.")
 
-            job_role = job_role.strip()
+                job_role = job_role.strip()
+
+            interview_stage = "awaiting_name"
         else:
             job_role = None
+            interview_stage = None
 
         session_id = str(uuid.uuid4())
 
@@ -41,10 +41,15 @@ class ConversationManager:
             "session_id": session_id,
             "mode": mode,
             "job_role": job_role,
+            "candidate_name": None,
+            "candidate_background": None,
+            "candidate_ready": False,
+            "interview_stage": interview_stage,
             "status": "active",
             "question_number": 0,
             "current_question": None,
             "conversation_history": [],
+            "interview_history": [],
             "evaluations": [],
             "total_score": 0.0,
             "created_at": datetime.now(timezone.utc).isoformat(),
@@ -62,6 +67,10 @@ class ConversationManager:
             "conversation_history": [
                 message.copy()
                 for message in session["conversation_history"]
+            ],
+            "interview_history": [
+                message.copy()
+                for message in session.get("interview_history", [])
             ],
             "evaluations": [
                 evaluation.copy()
@@ -106,9 +115,176 @@ class ConversationManager:
 
             return message.copy()
 
-    def process_message(self, session_id, question, top_k=5):
+    def add_interview_message(self, session_id, role, content):
+        """Atomically record an actual interview message."""
+
+        if role not in ("user", "assistant"):
+            raise ValueError("Invalid message role.")
+
+        if not isinstance(content, str) or not content.strip():
+            raise ValueError("Message content cannot be empty.")
+
+        message = {
+            "role": role,
+            "content": content.strip(),
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        }
+
+        with self.lock:
+            session = self.sessions.get(session_id)
+
+            if session is None:
+                raise ValueError("Conversation session not found.")
+
+            if session.get("status") != "active":
+                raise ValueError("This conversation has been completed.")
+
+            if session.get("mode") != "interview":
+                raise ValueError("This is not an interview session.")
+
+            if session.get("interview_stage") != "in_progress":
+                raise ValueError("The interview has not started.")
+
+            session["conversation_history"].append(message.copy())
+            session["interview_history"].append(message.copy())
+
+            return message.copy()
+    def _handle_interview_onboarding(self, session_id, message):
+        """Handle interview onboarding without invoking RAG or scoring."""
+
+        text = message.strip()
+        normalized = text.lower()
+
+        with self.lock:
+            session = self.sessions.get(session_id)
+
+            if session is None:
+                raise ValueError("Conversation session not found.")
+
+            if session.get("status") != "active":
+                raise ValueError("This conversation has been completed.")
+
+            stage = session.get("interview_stage")
+
+            user_message = {
+                "role": "user",
+                "content": text,
+                "timestamp": datetime.now(timezone.utc).isoformat()
+            }
+
+            session["conversation_history"].append(user_message)
+
+            if stage == "awaiting_name":
+
+                if normalized not in (
+                    "skip",
+                    "prefer not to say",
+                    "rather not say",
+                    "no",
+                    "anonymous"
+                ):
+                    session["candidate_name"] = text
+
+                session["interview_stage"] = "awaiting_role"
+
+                answer = (
+                    "Thank you. Which role or position are you "
+                    "interviewing for? For example, Staff Accountant, "
+                    "Financial Analyst, or Audit Associate."
+                )
+
+            elif stage == "awaiting_role":
+
+                if normalized in (
+                    "skip",
+                    "none",
+                    "no",
+                    "not sure"
+                ):
+                    answer = (
+                        "I need a target role to conduct a relevant "
+                        "interview. Which position would you like "
+                        "to practise for?"
+                    )
+                else:
+                    session["job_role"] = text
+                    session["interview_stage"] = "awaiting_background"
+
+                    answer = (
+                        f"Understood. You're interviewing for "
+                        f"{text}. Briefly tell me about your "
+                        "education, professional experience, or "
+                        "relevant skills. You can also say "
+                        "'skip' if you prefer."
+                    )
+
+            elif stage == "awaiting_background":
+
+                if normalized not in (
+                    "skip",
+                    "prefer not to say",
+                    "no",
+                    "none"
+                ):
+                    session["candidate_background"] = text
+
+                session["interview_stage"] = "awaiting_readiness"
+
+                answer = (
+                    "Thank you. I have the information I need. "
+                    "Are you ready to begin your interview?"
+                )
+
+            elif stage == "awaiting_readiness":
+
+                if normalized in (
+                    "yes",
+                    "yes i'm ready",
+                    "yes i am ready",
+                    "ready",
+                    "let's begin",
+                    "lets begin",
+                    "start",
+                    "begin"
+                ):
+                    session["candidate_ready"] = True
+                    session["interview_stage"] = "in_progress"
+
+                    answer = None
+
+                else:
+                    answer = (
+                        "No problem. Take your time. Tell me when "
+                        "you're ready to begin."
+                    )
+
+            else:
+                raise ValueError(
+                    "The interview is not in an onboarding stage."
+                )
+
+            if answer:
+                assistant_message = {
+                    "role": "assistant",
+                    "content": answer,
+                    "timestamp": datetime.now(timezone.utc).isoformat()
+                }
+
+                session["conversation_history"].append(
+                    assistant_message
+                )
+
+            return {
+                "answer": answer,
+                "stage": session["interview_stage"],
+                "ready_to_start": (
+                    session["interview_stage"] == "in_progress"
+                )
+            }
+
+    async def process_message(self, session_id, question, top_k=5):
         """
-        Route a user message to the appropriate manager.
+        Route study and interview messages using the session state.
         """
 
         if not isinstance(question, str) or not question.strip():
@@ -127,36 +303,102 @@ class ConversationManager:
                 "Study and interview managers have not been initialized."
             )
 
-        self.add_message(session_id, "user", question)
-
-        # Refresh history after adding the user's message.
-        session = self.get_session(session_id)
-
         if session["mode"] == "study":
 
-            response = self.study_manager.process_message(
+            self.add_message(session_id, "user", question)
+
+            session = self.get_session(session_id)
+
+            response = await self.study_manager.process_message(
                 question=question,
                 session=session,
                 top_k=top_k
             )
+
+            answer = response.get("answer")
+
+            if not isinstance(answer, str) or not answer.strip():
+                raise RuntimeError("The manager returned an empty response.")
+
+            self.add_message(session_id, "assistant", answer)
 
         elif session["mode"] == "interview":
 
-            response = self.interview_manager.process_message(
-                question=question,
-                session=session,
-                top_k=top_k
-            )
+            stage = session.get("interview_stage")
+
+            if stage != "in_progress":
+
+                onboarding = self._handle_interview_onboarding(
+                    session_id,
+                    question
+                )
+
+                answer = onboarding.get("answer")
+
+                if onboarding.get("ready_to_start"):
+
+                    updated_session = self.get_session(session_id)
+
+                    response = await self.interview_manager.start_interview(
+                        session=updated_session,
+                        top_k=top_k
+                    )
+
+                    answer = response.get("answer")
+
+                    if not isinstance(answer, str) or not answer.strip():
+                        raise RuntimeError(
+                            "The AI interviewer returned an empty opening question."
+                        )
+
+                    self.add_interview_message(
+                        session_id,
+                        "assistant",
+                        answer
+                    )
+
+                    self.set_current_question(session_id, answer)
+
+                else:
+                    response = {
+                        "answer": answer,
+                        "mode": "interview",
+                        "stage": onboarding.get("stage"),
+                        "ready_to_start": False,
+                        "sources": []
+                    }
+
+            else:
+
+                self.add_interview_message(
+                    session_id,
+                    "user",
+                    question
+                )
+
+                updated_session = self.get_session(session_id)
+
+                response = await self.interview_manager.process_message(
+                    question=question,
+                    session=updated_session,
+                    top_k=top_k
+                )
+
+                answer = response.get("answer")
+
+                if not isinstance(answer, str) or not answer.strip():
+                    raise RuntimeError(
+                        "The AI interviewer returned an empty response."
+                    )
+
+                self.add_interview_message(
+                    session_id,
+                    "assistant",
+                    answer
+                )
 
         else:
             raise ValueError("Unsupported conversation mode.")
-
-        answer = response.get("answer")
-
-        if not isinstance(answer, str) or not answer.strip():
-            raise RuntimeError("The manager returned an empty response.")
-
-        self.add_message(session_id, "assistant", answer)
 
         updated_session = self.get_session(session_id)
 
@@ -167,7 +409,6 @@ class ConversationManager:
             "session_id": session_id,
             "conversation_history": updated_session["conversation_history"]
         }
-
     def set_current_question(self, session_id, question):
 
         if not isinstance(question, str) or not question.strip():
@@ -259,6 +500,10 @@ class ConversationManager:
                 raise ValueError("Conversation session not found.")
 
             session["status"] = "completed"
+            session["interview_stage"] = (
+                "completed" if session["mode"] == "interview"
+                else None
+            )
             session["completed_at"] = datetime.now(timezone.utc).isoformat()
 
             return self._copy_session(session)
@@ -270,3 +515,10 @@ class ConversationManager:
 
 
 conversation_manager = ConversationManager()
+
+
+
+
+
+
+

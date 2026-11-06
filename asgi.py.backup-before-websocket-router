@@ -1,0 +1,58 @@
+﻿import json
+import logging
+
+from asgiref.wsgi import WsgiToAsgi
+from app import app
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger("asgi")
+
+
+class ErrorHandlingMiddleware:
+    def __init__(self, application):
+        self.application = application
+
+    async def __call__(self, scope, receive, send):
+        if scope["type"] != "http":
+            return await self.application(scope, receive, send)
+
+        response_started = False
+
+        async def send_wrapper(message):
+            nonlocal response_started
+
+            if message["type"] == "http.response.start":
+                response_started = True
+
+            await send(message)
+
+        try:
+            await self.application(scope, receive, send_wrapper)
+
+        except Exception:
+            logger.exception("Unhandled ASGI request error")
+
+            if not response_started:
+                body = json.dumps({
+                    "success": False,
+                    "error": "An unexpected server error occurred. Please try again."
+                }).encode("utf-8")
+
+                await send({
+                    "type": "http.response.start",
+                    "status": 500,
+                    "headers": [
+                        (b"content-type", b"application/json"),
+                        (b"content-length", str(len(body)).encode("ascii"))
+                    ]
+                })
+
+                await send({
+                    "type": "http.response.body",
+                    "body": body
+                })
+            else:
+                raise
+
+
+asgi_app = ErrorHandlingMiddleware(WsgiToAsgi(app))

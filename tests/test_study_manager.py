@@ -1,10 +1,11 @@
 
+import asyncio
 from services.study_manager import StudyManager
 
 
 class MockRAGService:
 
-    def ask(
+    async def ask(
         self,
         question,
         mode,
@@ -41,10 +42,10 @@ def main():
         ]
     }
 
-    response = study_manager.process_message(
+    response = asyncio.run(study_manager.process_message(
         question="Explain depreciation.",
         session=session
-    )
+    ))
 
     assert response["mode"] == "study"
     assert response["model"] == "test-model"

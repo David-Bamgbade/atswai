@@ -1,463 +1,4 @@
-// document.addEventListener("DOMContentLoaded", () => {
-
-//     // DOM ELEMENTS
-//     const chatForm = document.getElementById("chatForm");
-//     const messageInput = document.getElementById("messageInput");
-//     const sendButton = document.getElementById("sendButton");
-
-//     const welcomeScreen = document.getElementById("welcomeScreen");
-//     const messagesContainer = document.getElementById("messagesContainer");
-
-//     const studyNav = document.getElementById("studyNav");
-//     const interviewNav = document.getElementById("interviewNav");
-//     const newChatButton = document.getElementById("newChatButton");
-
-//     const topbarTitle = document.getElementById("topbarTitle");
-//     const breadcrumbMode = document.getElementById("breadcrumbMode");
-
-//     const welcomeTitle = document.getElementById("welcomeTitle");
-//     const welcomeDescription = document.getElementById("welcomeDescription");
-//     const suggestionGrid = document.getElementById("suggestionGrid");
-
-//     // APPLICATION STATE
-//     let currentMode = "study";
-//     let currentSessionId = null;
-//     let conversationHistory = [];
-//     let isCreatingSession = false;
-
-//     const modeSettings = {
-//         study: {
-//             title: "ATSWA Study Assistant",
-//             breadcrumb: "STUDY ASSISTANT",
-//             welcomeTitle: 'Master accounting.<br><span>Build your confidence.</span>',
-//             description:
-//                 "Your intelligent ATSWA study companion. Ask questions, understand difficult concepts and prepare confidently for your examinations.",
-//             placeholder: "Ask anything about accounting..."
-//         },
-
-//         interview: {
-//             title: "ATSWA AI Interviewer",
-//             breadcrumb: "AI INTERVIEWER",
-//             welcomeTitle: 'Prepare for success.<br><span>Prove your knowledge.</span>',
-//             description:
-//                 "Experience a professional accounting interview. Answer technical questions, demonstrate your knowledge and receive constructive feedback.",
-//             placeholder: "Start your accounting interview..."
-//         }
-//     };
-
-
-//     // CREATE A BACKEND SESSION
-//     async function createSession() {
-
-//         currentSessionId = null;
-//         isCreatingSession = true;
-//         sendButton.disabled = true;
-
-//         try {
-
-//             const response = await fetch("/api/session", {
-//                 method: "POST",
-//                 headers: {
-//                     "Content-Type": "application/json"
-//                 },
-//                 body: JSON.stringify({
-//                     mode: currentMode,
-//                     job_role: "Junior Auditor"
-//                 })
-//             });
-
-//             const data = await response.json();
-
-//             if (!response.ok || !data.success) {
-//                 throw new Error(
-//                     data.error || "Unable to create a conversation session."
-//                 );
-//             }
-
-//             currentSessionId = data.session_id;
-
-//             console.log(
-//                 `${currentMode} session created:`,
-//                 currentSessionId
-//             );
-
-//         } catch (error) {
-
-//             console.error("Session creation error:", error);
-
-//             addMessage(
-//                 "ai",
-//                 `**Unable to start a conversation.**\n\n${error.message}\n\nPlease refresh the page and try again.`
-//             );
-
-//         } finally {
-
-//             isCreatingSession = false;
-//             sendButton.disabled = false;
-
-//         }
-//     }
-
-
-//     // SWITCH MODES
-//     async function switchMode(mode) {
-
-//         if (!modeSettings[mode]) return;
-
-//         if (currentMode === mode && currentSessionId) return;
-
-//         currentMode = mode;
-
-//         const settings = modeSettings[mode];
-
-//         topbarTitle.textContent = settings.title;
-//         breadcrumbMode.textContent = settings.breadcrumb;
-
-//         welcomeTitle.innerHTML = settings.welcomeTitle;
-//         welcomeDescription.textContent = settings.description;
-
-//         messageInput.placeholder = settings.placeholder;
-
-//         studyNav.classList.toggle("active", mode === "study");
-//         interviewNav.classList.toggle("active", mode === "interview");
-
-//         resetConversation();
-
-//         if (mode === "interview") {
-
-//             suggestionGrid.innerHTML = `
-//                 <button class="suggestion-card" data-question="Start an ATSWA technical accounting interview.">
-//                     <span class="suggestion-icon">✦</span>
-//                     <strong>Start an Interview</strong>
-//                     <p>Begin a professional accounting interview.</p>
-//                 </button>
-
-//                 <button class="suggestion-card" data-question="Ask me interview questions on financial accounting.">
-//                     <span class="suggestion-icon">◈</span>
-//                     <strong>Financial Accounting</strong>
-//                     <p>Test your financial accounting knowledge.</p>
-//                 </button>
-
-//                 <button class="suggestion-card" data-question="Interview me on auditing and assurance.">
-//                     <span class="suggestion-icon">⌘</span>
-//                     <strong>Auditing and Assurance</strong>
-//                     <p>Demonstrate your auditing knowledge.</p>
-//                 </button>
-
-//                 <button class="suggestion-card" data-question="Interview me on taxation and Nigerian tax principles.">
-//                     <span class="suggestion-icon">◎</span>
-//                     <strong>Taxation</strong>
-//                     <p>Test your knowledge of taxation.</p>
-//                 </button>
-//             `;
-
-//         } else {
-
-//             suggestionGrid.innerHTML = `
-//                 <button class="suggestion-card" data-question="Explain the fundamental accounting concepts.">
-//                     <span class="suggestion-icon">✦</span>
-//                     <strong>Accounting Concepts</strong>
-//                     <p>Understand fundamental accounting principles.</p>
-//                 </button>
-
-//                 <button class="suggestion-card" data-question="What are the responsibilities of an external auditor?">
-//                     <span class="suggestion-icon">◈</span>
-//                     <strong>Auditing and Assurance</strong>
-//                     <p>Explore auditing responsibilities and procedures.</p>
-//                 </button>
-
-//                 <button class="suggestion-card" data-question="Explain the difference between financial accounting and management accounting.">
-//                     <span class="suggestion-icon">⌘</span>
-//                     <strong>Financial Reporting</strong>
-//                     <p>Learn how financial information is prepared.</p>
-//                 </button>
-
-//                 <button class="suggestion-card" data-question="Give me five ATSWA examination practice questions on taxation.">
-//                     <span class="suggestion-icon">◎</span>
-//                     <strong>Practice Questions</strong>
-//                     <p>Test your knowledge with exam-style questions.</p>
-//                 </button>
-//             `;
-
-//         }
-
-//         await createSession();
-//     }
-
-
-//     // RESET CONVERSATION
-//     function resetConversation() {
-
-//         currentSessionId = null;
-//         conversationHistory = [];
-
-//         messagesContainer.innerHTML = "";
-//         messagesContainer.style.display = "none";
-
-//         welcomeScreen.style.display = "block";
-//     }
-
-
-//     // DISPLAY MESSAGE
-//     function addMessage(role, content, sources = []) {
-
-//         welcomeScreen.style.display = "none";
-//         messagesContainer.style.display = "block";
-
-//         const messageElement = document.createElement("div");
-
-//         messageElement.className = `message ${role}-message`;
-
-//         const avatar = document.createElement("div");
-//         avatar.className = "message-avatar";
-//         avatar.textContent = role === "user" ? "Y" : "A";
-
-//         const messageContent = document.createElement("div");
-//         messageContent.className = "message-content";
-
-//         if (role === "ai") {
-
-//             const parsedHTML = marked.parse(content || "");
-//             messageContent.innerHTML = DOMPurify.sanitize(parsedHTML);
-
-//             if (sources.length > 0) {
-
-//                 const sourceContainer = document.createElement("div");
-//                 sourceContainer.className = "message-meta";
-
-//                 const sourceTitle = document.createElement("strong");
-//                 sourceTitle.textContent = "References: ";
-
-//                 sourceContainer.appendChild(sourceTitle);
-
-//                 const sourceNames = sources
-//                     .map(source => source.source)
-//                     .filter(Boolean);
-
-//                 sourceContainer.appendChild(
-//                     document.createTextNode(sourceNames.join(", "))
-//                 );
-
-//                 messageContent.appendChild(sourceContainer);
-//             }
-
-//         } else {
-
-//             messageContent.textContent = content;
-
-//         }
-
-//         messageElement.appendChild(avatar);
-//         messageElement.appendChild(messageContent);
-
-//         messagesContainer.appendChild(messageElement);
-
-//         messagesContainer.scrollTop = messagesContainer.scrollHeight;
-//     }
-
-
-//     // LOADING INDICATOR
-//     function showLoading() {
-
-//         const loading = document.createElement("div");
-
-//         loading.id = "loadingIndicator";
-//         loading.className = "message ai-message";
-
-//         loading.innerHTML = `
-//             <div class="message-avatar">A</div>
-//             <div class="message-content typing-indicator">
-//                 ATSWA AI is thinking...
-//             </div>
-//         `;
-
-//         messagesContainer.appendChild(loading);
-
-//         messagesContainer.scrollTop = messagesContainer.scrollHeight;
-//     }
-
-
-//     // REMOVE LOADING INDICATOR
-//     function removeLoading() {
-
-//         const loading = document.getElementById("loadingIndicator");
-
-//         if (loading) {
-//             loading.remove();
-//         }
-//     }
-
-
-//     // SEND MESSAGE TO FLASK BACKEND
-//     async function sendMessage(question) {
-
-//         if (!question.trim() || sendButton.disabled) return;
-
-//         if (!currentSessionId || isCreatingSession) {
-
-//             addMessage(
-//                 "ai",
-//                 "**Your conversation is still starting.** Please try again in a moment."
-//             );
-
-//             return;
-//         }
-
-//         addMessage("user", question);
-
-//         messageInput.value = "";
-//         messageInput.style.height = "auto";
-
-//         sendButton.disabled = true;
-
-//         showLoading();
-
-//         try {
-
-//             const response = await fetch("/api/chat", {
-
-//                 method: "POST",
-
-//                 headers: {
-//                     "Content-Type": "application/json"
-//                 },
-
-//                 body: JSON.stringify({
-//                     question: question,
-//                     mode: currentMode,
-//                     session_id: currentSessionId
-//                 })
-
-//             });
-
-//             const data = await response.json();
-
-//             removeLoading();
-
-//             if (!response.ok || !data.success) {
-
-//                 throw new Error(
-//                     data.error || "Unable to generate a response."
-//                 );
-
-//             }
-
-//             addMessage(
-//                 "ai",
-//                 data.answer,
-//                 data.sources || []
-//             );
-
-//             conversationHistory = data.conversation_history || [];
-
-//         } catch (error) {
-
-//             removeLoading();
-
-//             addMessage(
-//                 "ai",
-//                 `**Something went wrong.**\n\n${error.message}\n\nPlease try again.`
-//             );
-
-//             console.error("ATSWA AI Error:", error);
-
-//         } finally {
-
-//             sendButton.disabled = false;
-//             messageInput.focus();
-
-//         }
-//     }
-
-
-//     // FORM SUBMISSION
-//     chatForm.addEventListener("submit", (event) => {
-
-//         event.preventDefault();
-
-//         const question = messageInput.value.trim();
-
-//         if (!question || sendButton.disabled) return;
-
-//         sendMessage(question);
-
-//     });
-
-
-//     // ENTER TO SEND, SHIFT + ENTER FOR NEW LINE
-//     messageInput.addEventListener("keydown", (event) => {
-
-//         if (
-//             event.key === "Enter" &&
-//             !event.shiftKey &&
-//             !event.isComposing
-//         ) {
-
-//             event.preventDefault();
-//             chatForm.requestSubmit();
-
-//         }
-
-//     });
-
-
-//     // AUTO-RESIZE TEXTAREA
-//     messageInput.addEventListener("input", () => {
-
-//         messageInput.style.height = "auto";
-
-//         messageInput.style.height =
-//             Math.min(messageInput.scrollHeight, 150) + "px";
-
-//     });
-
-
-//     // SIDEBAR NAVIGATION
-//     studyNav.addEventListener("click", () => {
-//         switchMode("study");
-//     });
-
-//     interviewNav.addEventListener("click", () => {
-//         switchMode("interview");
-//     });
-
-
-//     // NEW CONVERSATION
-//     newChatButton.addEventListener("click", async () => {
-
-//         resetConversation();
-
-//         await createSession();
-
-//         messageInput.focus();
-
-//     });
-
-
-//     // SUGGESTED QUESTIONS
-//     suggestionGrid.addEventListener("click", (event) => {
-
-//         const card = event.target.closest("[data-question]");
-
-//         if (!card) return;
-
-//         const question = card.dataset.question;
-
-//         sendMessage(question);
-
-//     });
-
-
-//     // INITIALIZE APPLICATION
-//     switchMode("study");
-
-//     console.log("ATSWA AI frontend initialized successfully.");
-
-// });
-
-
-
-document.addEventListener("DOMContentLoaded", () => {
+﻿document.addEventListener("DOMContentLoaded", () => {
 
     // ==========================================
     // DOM ELEMENTS
@@ -466,6 +7,8 @@ document.addEventListener("DOMContentLoaded", () => {
     const chatForm = document.getElementById("chatForm");
     const messageInput = document.getElementById("messageInput");
     const sendButton = document.getElementById("sendButton");
+    const voiceButton = document.getElementById("voiceButton");
+    const voiceStatus = document.getElementById("voiceStatus");
 
     const welcomeScreen = document.getElementById("welcomeScreen");
     const messagesContainer = document.getElementById("messagesContainer");
@@ -481,6 +24,15 @@ document.addEventListener("DOMContentLoaded", () => {
     const welcomeDescription = document.getElementById("welcomeDescription");
     const suggestionGrid = document.getElementById("suggestionGrid");
 
+    const examinerNav = document.getElementById("examinerNav");
+    const examWorkspace = document.getElementById("examWorkspace");
+    const examStartForm = document.getElementById("examStartForm");
+    const paperSelect = document.getElementById("paperSelect");
+    const startExamButton = document.getElementById("startExamButton");
+    let activeExam = null;
+    let examTimer = null;
+    let examSubmitting = false;
+
 
     // ==========================================
     // APPLICATION STATE
@@ -494,6 +46,397 @@ document.addEventListener("DOMContentLoaded", () => {
 
     let isCreatingSession = false;
     let isSendingMessage = false;
+
+    // VOICE INTERVIEW STATE
+    let voiceSocket = null;
+    let voiceStream = null;
+    let voiceInputContext = null;
+    let voiceOutputContext = null;
+    let voiceProcessor = null;
+    let voiceGain = null;
+    let voiceActive = false;
+    let voiceConnecting = false;
+    let voiceStopping = false;
+    let nextPlaybackTime = 0;
+    let voiceOutputTranscript = "";
+
+    // ==========================================
+    // VOICE INTERVIEW AUDIO PIPELINE
+    // ==========================================
+
+    function setVoiceStatus(message, visible = true) {
+        if (!voiceStatus) return;
+
+        voiceStatus.textContent = message;
+        voiceStatus.hidden = !visible;
+    }
+
+
+    function downsampleToPCM16(input, inputRate) {
+
+        const ratio = inputRate / 16000;
+        const outputLength = Math.floor(input.length / ratio);
+        const output = new Int16Array(outputLength);
+
+        for (let i = 0; i < outputLength; i++) {
+
+            const start = Math.floor(i * ratio);
+            const end = Math.min(
+                Math.floor((i + 1) * ratio),
+                input.length
+            );
+
+            let sum = 0;
+
+            for (let j = start; j < end; j++) {
+                sum += input[j];
+            }
+
+            const sample = Math.max(
+                -1,
+                Math.min(1, sum / Math.max(1, end - start))
+            );
+
+            output[i] = sample < 0
+                ? sample * 0x8000
+                : sample * 0x7FFF;
+        }
+
+        return output;
+    }
+
+
+    function playVoiceAudio(arrayBuffer) {
+
+        if (!voiceOutputContext || !voiceActive) return;
+
+        const pcm = new Int16Array(arrayBuffer);
+        const audioBuffer = voiceOutputContext.createBuffer(
+            1,
+            pcm.length,
+            24000
+        );
+
+        const channel = audioBuffer.getChannelData(0);
+
+        for (let i = 0; i < pcm.length; i++) {
+            channel[i] = pcm[i] / 32768;
+        }
+
+        const source = voiceOutputContext.createBufferSource();
+
+        source.buffer = audioBuffer;
+        source.connect(voiceOutputContext.destination);
+
+        nextPlaybackTime = Math.max(
+            nextPlaybackTime,
+            voiceOutputContext.currentTime
+        );
+
+        source.start(nextPlaybackTime);
+
+        nextPlaybackTime += audioBuffer.duration;
+    }
+
+
+    function startMicrophoneProcessing() {
+
+        if (!voiceInputContext || !voiceStream || !voiceSocket) {
+            throw new Error("Microphone resources are not ready.");
+        }
+
+        voiceProcessor = voiceInputContext.createScriptProcessor(
+            4096,
+            1,
+            1
+        );
+
+        voiceGain = voiceInputContext.createGain();
+        voiceGain.gain.value = 0;
+
+        const microphoneSource =
+            voiceInputContext.createMediaStreamSource(voiceStream);
+
+        voiceProcessor.onaudioprocess = (event) => {
+
+            if (
+                !voiceActive ||
+                !voiceSocket ||
+                voiceSocket.readyState !== WebSocket.OPEN
+            ) {
+                return;
+            }
+
+            const input = event.inputBuffer.getChannelData(0);
+
+            const pcm = downsampleToPCM16(
+                input,
+                voiceInputContext.sampleRate
+            );
+
+            if (pcm.length > 0) {
+                voiceSocket.send(pcm.buffer);
+            }
+        };
+
+        microphoneSource.connect(voiceProcessor);
+        voiceProcessor.connect(voiceGain);
+        voiceGain.connect(voiceInputContext.destination);
+    }
+
+
+    async function stopVoiceInterview(showMessage = true) {
+
+        if (voiceStopping) return;
+
+        voiceStopping = true;
+        voiceActive = false;
+        voiceConnecting = false;
+
+        if (voiceProcessor) {
+            voiceProcessor.disconnect();
+            voiceProcessor.onaudioprocess = null;
+            voiceProcessor = null;
+        }
+
+        if (voiceGain) {
+            voiceGain.disconnect();
+            voiceGain = null;
+        }
+
+        if (voiceStream) {
+            voiceStream.getTracks().forEach(track => track.stop());
+            voiceStream = null;
+        }
+
+        if (voiceSocket) {
+            const socket = voiceSocket;
+            voiceSocket = null;
+
+            if (
+                socket.readyState === WebSocket.OPEN ||
+                socket.readyState === WebSocket.CONNECTING
+            ) {
+                socket.close(1000, "Voice interview stopped.");
+            }
+        }
+
+        if (voiceInputContext) {
+            await voiceInputContext.close().catch(() => {});
+            voiceInputContext = null;
+        }
+
+        if (voiceOutputContext) {
+            await voiceOutputContext.close().catch(() => {});
+            voiceOutputContext = null;
+        }
+
+        nextPlaybackTime = 0;
+        voiceOutputTranscript = "";
+
+        if (voiceButton) {
+            voiceButton.disabled = false;
+            voiceButton.classList.remove("recording");
+            voiceButton.title = "Start voice interview";
+            voiceButton.setAttribute(
+                "aria-label",
+                "Start voice interview"
+            );
+        }
+
+        if (messageInput) messageInput.disabled = false;
+        if (sendButton) sendButton.disabled = false;
+
+        if (showMessage) {
+            setVoiceStatus("Voice interview disconnected.");
+        } else {
+            setVoiceStatus("", false);
+        }
+
+        voiceStopping = false;
+    }
+
+
+    async function startVoiceInterview() {
+
+        if (
+            currentMode !== "interview" ||
+            !currentSessionId ||
+            voiceConnecting ||
+            voiceActive ||
+            isCreatingSession ||
+            isSendingMessage
+        ) {
+            return;
+        }
+
+        voiceConnecting = true;
+
+        if (voiceButton) {
+            voiceButton.disabled = true;
+        }
+
+        setVoiceStatus("Requesting microphone access...");
+
+        try {
+
+            if (!navigator.mediaDevices?.getUserMedia) {
+                throw new Error(
+                    "Microphone access is unavailable. Use HTTPS or localhost."
+                );
+            }
+
+            voiceStream = await navigator.mediaDevices.getUserMedia({
+                audio: {
+                    channelCount: 1,
+                    sampleRate: 16000,
+                    echoCancellation: true,
+                    noiseSuppression: true,
+                    autoGainControl: true
+                }
+            });
+
+            voiceInputContext = new AudioContext();
+            voiceOutputContext = new AudioContext({
+                sampleRate: 24000
+            });
+
+            await Promise.all([
+                voiceInputContext.resume(),
+                voiceOutputContext.resume()
+            ]);
+
+            const protocol =
+                window.location.protocol === "https:" ? "wss:" : "ws:";
+
+            const socketUrl =
+                `${protocol}//${window.location.host}/ws/interview/${currentSessionId}`;
+
+            voiceSocket = new WebSocket(socketUrl);
+            voiceSocket.binaryType = "arraybuffer";
+
+            voiceSocket.onmessage = (event) => {
+
+                if (event.data instanceof ArrayBuffer) {
+                    playVoiceAudio(event.data);
+                    return;
+                }
+
+                let data;
+
+                try {
+                    data = JSON.parse(event.data);
+                } catch (error) {
+                    console.error("Invalid voice server message:", error);
+                    return;
+                }
+
+                if (data.type === "connected") {
+                    setVoiceStatus("Connecting to voice interviewer...");
+                }
+
+                if (data.type === "live_ready") {
+
+                    voiceConnecting = false;
+                    voiceActive = true;
+
+                    if (voiceButton) {
+                        voiceButton.disabled = false;
+                        voiceButton.classList.add("recording");
+                        voiceButton.title = "Stop voice interview";
+                        voiceButton.setAttribute(
+                            "aria-label",
+                            "Stop voice interview"
+                        );
+                    }
+
+                    if (messageInput) messageInput.disabled = true;
+                    if (sendButton) sendButton.disabled = true;
+
+                    setVoiceStatus(
+                        `Voice interview active · ${data.model}`
+                    );
+
+                    try {
+                        startMicrophoneProcessing();
+                    } catch (error) {
+                        console.error(error);
+                        setVoiceStatus(error.message);
+                        void stopVoiceInterview(false);
+                    }
+                }
+
+                if (data.type === "output_transcription") {
+
+                    if (typeof data.text === "string" && data.text.trim()) {
+                        voiceOutputTranscript += data.text;
+                    }
+                }
+
+                if (data.type === "backend_response") {
+                    console.log(
+                        "Interview backend stage:",
+                        data.stage
+                    );
+                }
+
+                if (data.type === "turn_complete") {
+
+                    const spokenText = voiceOutputTranscript.trim();
+
+                    if (spokenText) {
+                        addMessage("ai", spokenText);
+                    }
+
+                    voiceOutputTranscript = "";
+                }
+
+                if (data.type === "error") {
+                    setVoiceStatus(data.message || "Voice connection error.");
+                }
+            };
+
+
+            voiceSocket.onerror = () => {
+                setVoiceStatus("Voice connection error. Check the server.");
+            };
+
+
+            voiceSocket.onclose = () => {
+
+                const wasActive = voiceActive || voiceConnecting;
+
+                if (!voiceStopping && wasActive) {
+                    void stopVoiceInterview(true);
+                }
+            };
+
+
+        } catch (error) {
+
+            console.error("Unable to start voice interview:", error);
+
+            await stopVoiceInterview(false);
+
+            setVoiceStatus(
+                error.message || "Unable to start the voice interview."
+            );
+        }
+    }
+
+
+    if (voiceButton) {
+
+        voiceButton.addEventListener("click", () => {
+
+            if (voiceActive || voiceConnecting) {
+                void stopVoiceInterview(true);
+            } else {
+                void startVoiceInterview();
+            }
+
+        });
+    }
 
     const modeSettings = {
 
@@ -539,7 +482,7 @@ document.addEventListener("DOMContentLoaded", () => {
             <button class="suggestion-card"
                 data-question="Start my interview. Please introduce yourself and begin with the first relevant interview question.">
 
-                <span class="suggestion-icon">✦</span>
+                <span class="suggestion-icon">Ã¢Å“Â¦</span>
                 <strong>Start Interview</strong>
                 <p>Begin your professional interview.</p>
 
@@ -549,7 +492,7 @@ document.addEventListener("DOMContentLoaded", () => {
             <button class="suggestion-card"
                 data-question="Ask me technical questions relevant to my job role.">
 
-                <span class="suggestion-icon">◈</span>
+                <span class="suggestion-icon">Ã¢â€”Ë†</span>
                 <strong>Technical Questions</strong>
                 <p>Test your professional knowledge.</p>
 
@@ -559,7 +502,7 @@ document.addEventListener("DOMContentLoaded", () => {
             <button class="suggestion-card"
                 data-question="Ask me practical scenario-based questions relevant to my job role.">
 
-                <span class="suggestion-icon">⌘</span>
+                <span class="suggestion-icon">Ã¢Å’Ëœ</span>
                 <strong>Practical Scenarios</strong>
                 <p>Test how you handle workplace situations.</p>
 
@@ -569,7 +512,7 @@ document.addEventListener("DOMContentLoaded", () => {
             <button class="suggestion-card"
                 data-question="Assess my professional knowledge and ask challenging questions relevant to my job role.">
 
-                <span class="suggestion-icon">◎</span>
+                <span class="suggestion-icon">Ã¢â€”Å½</span>
                 <strong>Professional Assessment</strong>
                 <p>Evaluate your professional knowledge.</p>
 
@@ -591,7 +534,7 @@ document.addEventListener("DOMContentLoaded", () => {
             <button class="suggestion-card"
                 data-question="Explain the fundamental accounting concepts.">
 
-                <span class="suggestion-icon">✦</span>
+                <span class="suggestion-icon">Ã¢Å“Â¦</span>
                 <strong>Accounting Concepts</strong>
                 <p>Understand fundamental accounting principles.</p>
 
@@ -601,7 +544,7 @@ document.addEventListener("DOMContentLoaded", () => {
             <button class="suggestion-card"
                 data-question="What are the responsibilities of an external auditor?">
 
-                <span class="suggestion-icon">◈</span>
+                <span class="suggestion-icon">Ã¢â€”Ë†</span>
                 <strong>Auditing and Assurance</strong>
                 <p>Explore auditing responsibilities and procedures.</p>
 
@@ -611,7 +554,7 @@ document.addEventListener("DOMContentLoaded", () => {
             <button class="suggestion-card"
                 data-question="Explain the difference between financial accounting and management accounting.">
 
-                <span class="suggestion-icon">⌘</span>
+                <span class="suggestion-icon">Ã¢Å’Ëœ</span>
                 <strong>Financial Reporting</strong>
                 <p>Learn how financial information is prepared.</p>
 
@@ -621,7 +564,7 @@ document.addEventListener("DOMContentLoaded", () => {
             <button class="suggestion-card"
                 data-question="Give me five ATSWA examination practice questions on taxation.">
 
-                <span class="suggestion-icon">◎</span>
+                <span class="suggestion-icon">Ã¢â€”Å½</span>
                 <strong>Practice Questions</strong>
                 <p>Test your knowledge with exam-style questions.</p>
 
@@ -653,16 +596,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     "Content-Type": "application/json"
                 },
 
-                body: JSON.stringify({
-
-                    mode: currentMode,
-
-                    job_role:
-                        currentMode === "interview"
-                            ? jobRole
-                            : null
-
-                })
+                body: JSON.stringify({ mode: currentMode })
 
             });
 
@@ -681,7 +615,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
             currentSessionId = data.session_id;
 
-            currentJobRole = jobRole;
+            if (data.greeting) {
+                addMessage("ai", data.greeting);
+            }
+
+            currentJobRole = data.job_role || null;
 
 
             console.log("SESSION CREATED");
@@ -719,40 +657,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
 
-    // ==========================================
-    // SELECT INTERVIEW ROLE
-    // ==========================================
-
-    function requestJobRole() {
-
-        const role = window.prompt(
-
-            "What job position would you like to be interviewed for?\n\nExamples:\n\nJunior Accountant\nExternal Auditor\nFinancial Analyst\nTax Associate\nManagement Accountant\nFinance Manager\nInternal Auditor\n\nYou can enter any job title."
-
-        );
-
-
-        if (role === null) {
-            return null;
-        }
-
-
-        const cleanedRole = role.trim();
-
-
-        if (!cleanedRole) {
-
-            alert("Please enter a valid job position.");
-
-            return requestJobRole();
-
-        }
-
-
-        return cleanedRole;
-
-    }
-
 
     // ==========================================
     // RESET CONVERSATION
@@ -779,7 +683,16 @@ document.addEventListener("DOMContentLoaded", () => {
 
     async function switchMode(mode, forceNew = false) {
 
+        if (mode === "examiner") {
+            switchToExaminer(forceNew);
+            return;
+        }
+
         if (!modeSettings[mode]) return;
+
+        if (voiceActive || voiceConnecting) {
+            await stopVoiceInterview(false);
+        }
 
 
         if (
@@ -791,27 +704,16 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
 
-        // Ask for a role before changing to interview mode.
-        let selectedRole = null;
-
-
-        if (mode === "interview") {
-
-            selectedRole = requestJobRole();
-
-            if (!selectedRole) {
-                return;
-            }
-
-        }
-
-
         currentMode = mode;
+        if (voiceButton) voiceButton.hidden = mode !== "interview";
 
-        currentJobRole = selectedRole;
+        currentJobRole = null;
 
 
         const settings = modeSettings[mode];
+
+        if (examWorkspace) examWorkspace.hidden = true;
+        document.getElementById("chatWorkspace").style.display = "flex";
 
 
         // Update interface.
@@ -837,6 +739,8 @@ document.addEventListener("DOMContentLoaded", () => {
             mode === "interview"
         );
 
+        if (examinerNav) examinerNav.classList.remove("active");
+
 
         resetConversation();
 
@@ -847,8 +751,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
             renderInterviewSuggestions();
 
-            welcomeDescription.textContent =
-                `Prepare for your ${selectedRole} interview. Your questions will be tailored to this position.`;
+            welcomeDescription.textContent = "I will guide you through a few introductory questions before your interview begins.";
 
 
         } else {
@@ -860,7 +763,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         // Create the new backend session.
 
-        const created = await createSession(selectedRole);
+        const created = await createSession();
 
 
         if (created) {
@@ -1206,6 +1109,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
     });
 
+    examinerNav.addEventListener("click", () => {
+        switchMode("examiner");
+    });
+
 
     // ==========================================
     // NEW CONVERSATION
@@ -1238,6 +1145,571 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
 
+
+    // ==========================================
+    // AI EXAMINER
+    // ==========================================
+
+    function switchToExaminer(forceNew = false) {
+        if (currentMode === "examiner" && !forceNew) return;
+
+        if (voiceActive || voiceConnecting) {
+            void stopVoiceInterview(false);
+        }
+
+        if (voiceButton) voiceButton.hidden = true;
+        currentMode = "examiner";
+        currentSessionId = null;
+        currentJobRole = null;
+
+        if (examTimer) {
+            clearInterval(examTimer);
+            examTimer = null;
+        }
+
+        activeExam = null;
+        examSubmitting = false;
+
+        topbarTitle.textContent = "ATSWA AI Examiner";
+        breadcrumbMode.textContent = "AI EXAMINER";
+
+        studyNav.classList.remove("active");
+        interviewNav.classList.remove("active");
+        examinerNav.classList.add("active");
+
+        document.getElementById("chatWorkspace").style.display = "none";
+        examWorkspace.hidden = false;
+
+        examWorkspace.innerHTML = `
+            <div class="exam-start-card">
+                <div class="exam-heading">
+                    <span class="exam-label">ATSWA EXAMINATION CENTRE</span>
+                    <h1>Test your knowledge.<br><span>Measure your readiness.</span></h1>
+                    <p>Take a structured ATSWA examination based on the official syllabus. Your answers will be marked and you will receive your results and feedback.</p>
+                </div>
+
+                <form id="examStartForm">
+                    <label for="paperSelect">Select examination paper</label>
+                    <select id="paperSelect" required>
+                        <option value="">Choose a paper</option>
+                        <option value="1">Paper 1 â€” Basic Accounting</option>
+                        <option value="2">Paper 2 â€” Economics</option>
+                        <option value="3">Paper 3 â€” Business Law</option>
+                        <option value="4">Paper 4 â€” Communication Skills</option>
+                        <option value="5">Paper 5 â€” Financial Accounting</option>
+                        <option value="6">Paper 6 â€” Public Sector Accounting</option>
+                        <option value="7">Paper 7 â€” Quantitative Analysis</option>
+                        <option value="8">Paper 8 â€” Information Technology</option>
+                        <option value="9">Paper 9 â€” Principles of Auditing &amp; Assurance</option>
+                        <option value="10">Paper 10 â€” Cost Accounting</option>
+                        <option value="11">Paper 11 â€” Taxation</option>
+                        <option value="12">Paper 12 â€” Management</option>
+                    </select>
+
+                    <div class="exam-info-grid">
+                        <div><strong>3 hours</strong><span>Exam duration</span></div>
+                        <div><strong>100 marks</strong><span>Total marks</span></div>
+                        <div><strong>12 papers</strong><span>Available subjects</span></div>
+                    </div>
+
+                    <p class="exam-notice">Your examination timer starts when you begin. Your answers are submitted for marking when you finish or when time expires.</p>
+
+                    <button type="submit" class="exam-primary-button" id="startExamButton">Start Examination</button>
+                    <p id="examStartError" class="exam-error" role="alert"></p>
+                </form>
+            </div>
+        `;
+
+        document.getElementById("examStartForm").addEventListener("submit", startExam);
+    }
+
+
+    async function startExam(event) {
+        event.preventDefault();
+
+        const selectedPaper = Number(
+            document.getElementById("paperSelect").value
+        );
+
+        const button = document.getElementById("startExamButton");
+        const errorBox = document.getElementById("examStartError");
+
+        if (!Number.isInteger(selectedPaper) || selectedPaper < 1 || selectedPaper > 12) {
+            errorBox.textContent = "Please select a valid ATSWA paper.";
+            return;
+        }
+
+        button.disabled = true;
+        button.textContent = "Generating examination...";
+        errorBox.textContent = "";
+
+        try {
+            const response = await fetch("/api/exam/start", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    paper_number: selectedPaper,
+                    exam_version: 1
+                })
+            });
+
+            const data = await response.json();
+
+            if (!response.ok || !data.success) {
+                throw new Error(data.error || "Unable to generate examination.");
+            }
+
+            activeExam = data.exam;
+
+            if (!activeExam || !activeExam.exam_id || !Array.isArray(activeExam.sections)) {
+                throw new Error("The server returned an invalid examination.");
+            }
+
+            renderExam(activeExam);
+            startExamTimer(activeExam.remaining_seconds);
+
+        } catch (error) {
+            errorBox.textContent = error.message;
+            button.disabled = false;
+            button.textContent = "Start Examination";
+            console.error("Exam start error:", error);
+        }
+    }
+
+
+    function escapeExamHTML(value) {
+        return String(value ?? "").replace(/[&<>"']/g, character => ({
+            "&": "&amp;",
+            "<": "&lt;",
+            ">": "&gt;",
+            '"': "&quot;",
+            "'": "&#039;"
+        })[character]);
+    }
+
+
+    function renderExam(exam) {
+        const duration = Number(exam.remaining_seconds || exam.duration_minutes * 60);
+
+        let html = `
+            <div class="exam-taking">
+                <header class="exam-live-header">
+                    <div>
+                        <span class="exam-label">ATSWA EXAMINATION</span>
+                        <h2>${escapeExamHTML(exam.subject)}</h2>
+                        <p>Paper ${escapeExamHTML(exam.paper_number)} Â· ${escapeExamHTML(exam.total_marks)} marks</p>
+                    </div>
+                    <div class="exam-clock" id="examClock" aria-live="off">${formatExamTime(duration)}</div>
+                </header>
+
+                <div class="exam-instructions">
+                    Answer all compulsory questions. For optional sections, select exactly the required number of questions.
+                </div>
+        `;
+
+        exam.sections.forEach(section => {
+            const optional = section.questions_to_answer !== null &&
+                section.questions_to_answer !== undefined;
+
+            html += `
+                <section class="exam-section" data-section="${escapeExamHTML(section.name)}">
+                    <div class="exam-section-heading">
+                        <div>
+                            <span class="exam-label">SECTION ${escapeExamHTML(section.name)}</span>
+                            <h3>${escapeExamHTML(section.description || "Examination questions")}</h3>
+                        </div>
+                        <span>${escapeExamHTML(section.total_marks)} marks</span>
+                    </div>
+            `;
+
+            if (optional) {
+                html += `
+                    <p class="exam-optional-rule">
+                        Choose exactly ${Number(section.questions_to_answer)} of
+                        ${Number(section.questions_available ?? section.questions.length)} questions.
+                        <span class="optional-counter" data-counter="${escapeExamHTML(section.name)}">0 selected</span>
+                    </p>
+                `;
+            }
+
+            section.questions.forEach(question => {
+                const number = Number(question.number);
+                const type = question.type;
+                const isStructured = type === "structured";
+                const questionId = `${section.name}-${number}`;
+
+                html += `
+                    <article class="exam-question"
+                        data-section="${escapeExamHTML(section.name)}"
+                        data-number="${number}"
+                        data-optional="${optional}">
+                        ${optional ? `
+                            <label class="exam-question-select">
+                                <input type="checkbox" class="optional-question-check"
+                                    data-section="${escapeExamHTML(section.name)}"
+                                    data-number="${number}">
+                                Select this question
+                            </label>
+                        ` : ""}
+
+                        <div class="exam-question-heading">
+                            <strong>Question ${number}</strong>
+                            <span>${escapeExamHTML(question.marks ?? "")} marks</span>
+                        </div>
+
+                        <div class="exam-question-text">${escapeExamHTML(question.question || "")}</div>
+                        ${question.passage ? `
+                            <div class="exam-passage">
+                                <h4>Reading Passage</h4>
+                                <div>${escapeExamHTML(question.passage)}</div>
+                            </div>
+                        ` : ""}
+                        <p class="exam-topic">Topic: ${escapeExamHTML(question.topic || "ATSWA syllabus")}</p>
+                `;
+
+                if (type === "multiple_choice") {
+                    html += `<div class="exam-options">`;
+
+                    Object.entries(question.options || {}).forEach(([key, value]) => {
+                        html += `
+                            <label class="exam-option">
+                                <input type="radio" name="answer-${escapeExamHTML(questionId)}"
+                                    value="${escapeExamHTML(key)}">
+                                <span><strong>${escapeExamHTML(key)}.</strong> ${escapeExamHTML(value)}</span>
+                            </label>
+                        `;
+                    });
+
+                    html += `</div>`;
+
+                } else if (type === "short_answer") {
+                    html += `
+                        <textarea class="exam-answer-input"
+                            data-answer-section="${escapeExamHTML(section.name)}"
+                            data-answer-number="${number}"
+                            placeholder="Enter your answer..."
+                            rows="4"></textarea>
+                    `;
+
+                } else if (isStructured) {
+                    const parts = Array.isArray(question.sub_questions)
+                        ? question.sub_questions
+                        : [];
+
+                    if (parts.length) {
+                        parts.forEach((part, index) => {
+                            const partKey = String(part.part || part.label || String.fromCharCode(97 + index)).toLowerCase();
+
+                            html += `
+                                <div class="exam-part">
+                                    <div class="exam-part-prompt">
+                                        <strong>(${escapeExamHTML(partKey)})</strong>
+                                        ${escapeExamHTML(part.question || part.text || part.prompt || "")}
+                                        ${part.marks !== undefined ? `<span>${escapeExamHTML(part.marks)} marks</span>` : ""}
+                                    </div>
+                                    <textarea class="exam-answer-input structured-answer"
+                                        data-answer-section="${escapeExamHTML(section.name)}"
+                                        data-answer-number="${number}"
+                                        data-part="${escapeExamHTML(partKey)}"
+                                        placeholder="Answer part (${escapeExamHTML(partKey)})..."
+                                        rows="4"></textarea>
+                                </div>
+                            `;
+                        });
+                    } else {
+                        html += `
+                            <textarea class="exam-answer-input structured-answer"
+                                data-answer-section="${escapeExamHTML(section.name)}"
+                                data-answer-number="${number}"
+                                data-part="a"
+                                placeholder="Enter your answer..."
+                                rows="5"></textarea>
+                        `;
+                    }
+                }
+
+                html += `</article>`;
+            });
+
+            html += `</section>`;
+        });
+
+        html += `
+                <div class="exam-submit-area">
+                    <p>Review your answers before submitting. You cannot change them after submission.</p>
+                    <button type="button" class="exam-primary-button" id="submitExamButton">
+                        Submit Examination
+                    </button>
+                    <p id="examSubmitError" class="exam-error" role="alert"></p>
+                </div>
+            </div>
+        `;
+
+        examWorkspace.innerHTML = html;
+
+        examWorkspace.querySelectorAll(".optional-question-check").forEach(check => {
+            check.addEventListener("change", () => {
+                const sectionName = check.dataset.section;
+                const section = exam.sections.find(item => String(item.name) === sectionName);
+                const required = Number(section.questions_to_answer);
+
+                const selected = [...examWorkspace.querySelectorAll(
+                    `.optional-question-check[data-section="${CSS.escape(sectionName)}"]:checked`
+                )];
+
+                if (selected.length > required) {
+                    check.checked = false;
+                    alert(`You can select only ${required} questions in Section ${sectionName}.`);
+                }
+
+                updateOptionalCounter(sectionName);
+            });
+        });
+
+        document.getElementById("submitExamButton").addEventListener("click", () => {
+            submitExam(false);
+        });
+    }
+
+
+    function updateOptionalCounter(sectionName) {
+        const selected = examWorkspace.querySelectorAll(
+            `.optional-question-check[data-section="${CSS.escape(sectionName)}"]:checked`
+        ).length;
+
+        const counter = examWorkspace.querySelector(
+            `[data-counter="${CSS.escape(sectionName)}"]`
+        );
+
+        if (counter) {
+            counter.textContent = `${selected} selected`;
+        }
+    }
+
+
+    function formatExamTime(seconds) {
+        const safeSeconds = Math.max(0, Math.floor(seconds));
+        const hours = Math.floor(safeSeconds / 3600);
+        const minutes = Math.floor((safeSeconds % 3600) / 60);
+        const remaining = safeSeconds % 60;
+
+        return [hours, minutes, remaining]
+            .map(value => String(value).padStart(2, "0"))
+            .join(":");
+    }
+
+
+    function startExamTimer(seconds) {
+        if (examTimer) clearInterval(examTimer);
+
+        let remaining = Math.max(0, Number(seconds));
+
+        const clock = document.getElementById("examClock");
+
+        examTimer = setInterval(() => {
+            remaining -= 1;
+
+            const currentClock = document.getElementById("examClock");
+
+            if (currentClock) {
+                currentClock.textContent = formatExamTime(remaining);
+                currentClock.classList.toggle("exam-time-warning", remaining <= 300);
+            }
+
+            if (remaining <= 0) {
+                clearInterval(examTimer);
+                examTimer = null;
+                submitExam(true);
+            }
+        }, 1000);
+
+        if (clock) clock.textContent = formatExamTime(remaining);
+    }
+
+
+    function collectExamAnswers() {
+        const answers = [];
+        const included = new Set();
+
+        activeExam.sections.forEach(section => {
+            const optional = section.questions_to_answer !== null &&
+                section.questions_to_answer !== undefined;
+
+            section.questions.forEach(question => {
+                const number = Number(question.number);
+                const key = `${section.name}-${number}`;
+
+                if (optional) {
+                    const selected = examWorkspace.querySelector(
+                        `.optional-question-check[data-section="${CSS.escape(String(section.name))}"][data-number="${number}"]`
+                    );
+
+                    if (!selected || !selected.checked) return;
+                }
+
+                let answer = "";
+
+                if (question.type === "multiple_choice") {
+                    const selected = examWorkspace.querySelector(
+                        `input[name="answer-${CSS.escape(key)}"]:checked`
+                    );
+
+                    // Omit unanswered MCQs. The backend awards zero
+                    // for questions that have no submitted answer.
+                    if (!selected) return;
+                    answer = selected.value;
+
+                } else if (question.type === "short_answer") {
+                    const field = examWorkspace.querySelector(
+                        `.exam-answer-input[data-answer-section="${CSS.escape(String(section.name))}"][data-answer-number="${number}"]`
+                    );
+
+                    answer = field ? field.value.trim() : "";
+
+                } else if (question.type === "structured") {
+                    answer = {};
+
+                    examWorkspace.querySelectorAll(
+                        `.structured-answer[data-answer-section="${CSS.escape(String(section.name))}"][data-answer-number="${number}"]`
+                    ).forEach(field => {
+                        answer[field.dataset.part] = field.value.trim();
+                    });
+                }
+
+                answers.push({
+                    section: String(section.name),
+                    question_number: number,
+                    answer: answer
+                });
+
+                included.add(key);
+            });
+        });
+
+        return answers;
+    }
+
+
+    async function submitExam(timeExpired = false) {
+        if (!activeExam || examSubmitting) return;
+
+        const answers = collectExamAnswers();
+
+        // Check that optional sections have exactly the required number selected.
+        for (const section of activeExam.sections) {
+            if (section.questions_to_answer === null ||
+                section.questions_to_answer === undefined) continue;
+
+            const selectedCount = answers.filter(
+                answer => answer.section === String(section.name)
+            ).length;
+
+            if (selectedCount !== Number(section.questions_to_answer)) {
+                const error = document.getElementById("examSubmitError");
+                if (error) {
+                    error.textContent =
+                        `Section ${section.name}: select exactly ${section.questions_to_answer} questions before submitting.`;
+                }
+                return;
+            }
+        }
+
+        if (!timeExpired && !window.confirm("Are you sure you want to submit your examination? You cannot change your answers afterwards.")) {
+            return;
+        }
+
+        examSubmitting = true;
+
+        if (examTimer) {
+            clearInterval(examTimer);
+            examTimer = null;
+        }
+
+        const submitButton = document.getElementById("submitExamButton");
+
+        if (submitButton) {
+            submitButton.disabled = true;
+            submitButton.textContent = "Marking your examination...";
+        }
+
+        const errorBox = document.getElementById("examSubmitError");
+
+        if (errorBox) {
+            errorBox.textContent = timeExpired
+                ? "Time is up. Your examination is being submitted."
+                : "";
+        }
+
+        try {
+            const response = await fetch(
+                `/api/exam/${encodeURIComponent(activeExam.exam_id)}/submit`,
+                {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ answers })
+                }
+            );
+
+            const data = await response.json();
+
+            if (!response.ok || !data.success) {
+                throw new Error(data.error || "Unable to submit examination.");
+            }
+
+            renderExamResults(data.result);
+
+        } catch (error) {
+            examSubmitting = false;
+
+            if (errorBox) errorBox.textContent = error.message;
+
+            if (submitButton) {
+                submitButton.disabled = false;
+                submitButton.textContent = "Try Submission Again";
+            }
+
+            console.error("Exam submission error:", error);
+        }
+    }
+
+
+    function renderExamResults(result) {
+        const rows = (result.question_results || []).map(item => `
+            <article class="exam-result-question">
+                <div class="exam-question-heading">
+                    <strong>Section ${escapeExamHTML(item.section)} Â· Question ${escapeExamHTML(item.question_number)}</strong>
+                    <span>${escapeExamHTML(item.awarded_marks)} / ${escapeExamHTML(item.maximum_marks)} marks</span>
+                </div>
+                <p>${escapeExamHTML(item.feedback || "No additional feedback.")}</p>
+                ${item.correct_answer ? `<p><strong>Correct option:</strong> ${escapeExamHTML(item.correct_answer)}</p>` : ""}
+            </article>
+        `).join("");
+
+        examWorkspace.innerHTML = `
+            <div class="exam-start-card exam-results-card">
+                <span class="exam-label">EXAMINATION RESULTS</span>
+                <h1>${escapeExamHTML(result.performance)}</h1>
+                <p>${escapeExamHTML(result.subject)} Â· Paper ${escapeExamHTML(result.paper_number)}</p>
+
+                <div class="exam-score">
+                    <strong>${escapeExamHTML(result.percentage)}%</strong>
+                    <span>${escapeExamHTML(result.marks_obtained)} / ${escapeExamHTML(result.total_marks_available)} marks</span>
+                </div>
+
+                <h2>Question-by-question feedback</h2>
+                <div class="exam-results-list">${rows}</div>
+
+                <button type="button" class="exam-primary-button" id="newExamButton">
+                    Start Another Examination
+                </button>
+            </div>
+        `;
+
+        document.getElementById("newExamButton").addEventListener("click", () => {
+            switchToExaminer(true);
+        });
+    }
+
     // ==========================================
     // INITIALIZE APPLICATION
     // ==========================================
@@ -1251,3 +1723,9 @@ document.addEventListener("DOMContentLoaded", () => {
     );
 
 });
+
+
+
+
+
+

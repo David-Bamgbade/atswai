@@ -7,7 +7,7 @@ class StudyManager:
     def __init__(self, rag=None):
         self.rag = rag or rag_service
 
-    def process_message(self, question, session, top_k=5):
+    async def process_message(self, question, session, top_k=5):
         """
         Process a student's message using the ATSWA RAG service.
         """
@@ -28,7 +28,7 @@ class StudyManager:
             "conversation_history", []
         )
 
-        response = self.rag.ask(
+        response = await self.rag.ask(
             question=question.strip(),
             mode="study",
             top_k=top_k,

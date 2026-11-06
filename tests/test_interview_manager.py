@@ -1,10 +1,11 @@
 
+import asyncio
 from services.interview_manager import InterviewManager
 
 
 class MockRAGService:
 
-    def ask(
+    async def ask(
         self,
         question,
         mode,
@@ -47,10 +48,10 @@ def test_interview_manager():
         "total_score": 0
     }
 
-    response = interview_manager.process_message(
+    response = asyncio.run(interview_manager.process_message(
         question="Internal auditing evaluates internal controls and risk management.",
         session=session
-    )
+    ))
 
     assert response["mode"] == "interview"
     assert response["model"] == "test-model"
