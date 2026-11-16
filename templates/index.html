@@ -19,7 +19,7 @@
 <div class="app-container">
 
     <!-- SIDEBAR -->
-    <aside class="sidebar">
+    <aside class="sidebar" id="appSidebar">
 
         <div class="brand">
             <div class="brand-icon">A</div>
@@ -76,10 +76,18 @@
     </aside>
 
 
+    <div class="mobile-nav-overlay" id="mobileNavOverlay"></div>
+
     <!-- MAIN CONTENT -->
     <main class="main-content">
 
         <header class="topbar">
+            <button type="button" id="mobileMenuButton" class="mobile-menu-button"
+                aria-label="Open navigation menu" aria-controls="appSidebar" aria-expanded="false">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
             <div>
                 <p class="breadcrumb">WORKSPACE / <span id="breadcrumbMode">STUDY ASSISTANT</span></p>
                 <h3 id="topbarTitle">ATSWA Study Assistant</h3>
@@ -315,5 +323,62 @@
     });
 </script>
 
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+    const menuButton = document.getElementById("mobileMenuButton");
+    const sidebar = document.getElementById("appSidebar");
+    const overlay = document.getElementById("mobileNavOverlay");
+
+    if (!menuButton || !sidebar || !overlay) return;
+
+    function openMobileMenu() {
+        sidebar.classList.add("mobile-open");
+        overlay.classList.add("active");
+        document.body.classList.add("mobile-nav-open");
+
+        menuButton.setAttribute("aria-expanded", "true");
+        menuButton.setAttribute("aria-label", "Close navigation menu");
+    }
+
+    function closeMobileMenu() {
+        sidebar.classList.remove("mobile-open");
+        overlay.classList.remove("active");
+        document.body.classList.remove("mobile-nav-open");
+
+        menuButton.setAttribute("aria-expanded", "false");
+        menuButton.setAttribute("aria-label", "Open navigation menu");
+    }
+
+    menuButton.addEventListener("click", () => {
+        if (sidebar.classList.contains("mobile-open")) {
+            closeMobileMenu();
+        } else {
+            openMobileMenu();
+        }
+    });
+
+    overlay.addEventListener("click", closeMobileMenu);
+
+    sidebar.querySelectorAll(".nav-item").forEach(item => {
+        item.addEventListener("click", closeMobileMenu);
+    });
+
+    document.addEventListener("keydown", event => {
+        if (event.key === "Escape") {
+            closeMobileMenu();
+        }
+    });
+
+    window.addEventListener("resize", () => {
+        if (window.innerWidth > 700) {
+            closeMobileMenu();
+        }
+    });
+});
+</script>
 </body>
 </html>
+
+
+
+

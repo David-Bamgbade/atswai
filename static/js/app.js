@@ -358,7 +358,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     if (sendButton) sendButton.disabled = true;
 
                     setVoiceStatus(
-                        `Voice interview active Â· ${data.model}`
+                        `Voice interview active | ${data.model}`
                     );
 
                     try {
@@ -1709,7 +1709,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     <div>
                         <span class="exam-label">ATSWA EXAMINATION</span>
                         <h2>${escapeExamHTML(exam.subject)}</h2>
-                        <p>Paper ${escapeExamHTML(exam.paper_number)} Ã‚Â· ${escapeExamHTML(exam.total_marks)} marks</p>
+                        <p>Paper ${escapeExamHTML(exam.paper_number)} | ${escapeExamHTML(exam.total_marks)} marks</p>
                     </div>
                     <div class="exam-clock" id="examClock" aria-live="off">${formatExamTime(duration)}</div>
                 </header>
@@ -2089,7 +2089,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const rows = (result.question_results || []).map(item => `
             <article class="exam-result-question">
                 <div class="exam-question-heading">
-                    <strong>Section ${escapeExamHTML(item.section)} Ã‚Â· Question ${escapeExamHTML(item.question_number)}</strong>
+                    <strong>Section ${escapeExamHTML(item.section)} | Question ${escapeExamHTML(item.question_number)}</strong>
                     <span>${escapeExamHTML(item.awarded_marks)} / ${escapeExamHTML(item.maximum_marks)} marks</span>
                 </div>
                 <p>${escapeExamHTML(item.feedback || "No additional feedback.")}</p>
@@ -2101,7 +2101,7 @@ document.addEventListener("DOMContentLoaded", () => {
             <div class="exam-start-card exam-results-card">
                 <span class="exam-label">EXAMINATION RESULTS</span>
                 <h1>${escapeExamHTML(result.performance)}</h1>
-                <p>${escapeExamHTML(result.subject)} Ã‚Â· Paper ${escapeExamHTML(result.paper_number)}</p>
+                <p>${escapeExamHTML(result.subject)} | Paper ${escapeExamHTML(result.paper_number)}</p>
 
                 <div class="exam-score">
                     <strong>${escapeExamHTML(result.percentage)}%</strong>
