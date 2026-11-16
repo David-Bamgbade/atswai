@@ -7,6 +7,7 @@ from services.interview_voice_gateway import interview_voice_gateway
 from services.pipecat_voice_manager import pipecat_voice_manager
 from services.pipecat_interview_worker import create_interview_worker
 from pipecat.transports.smallwebrtc.connection import SmallWebRTCConnection
+from aiortc.sdp import candidate_from_sdp
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("asgi")
@@ -66,6 +67,135 @@ class ASGIRouter:
     def __init__(self, http_application, websocket_application):
         self.http_application = http_application
         self.websocket_application = websocket_application
+        self.webrtc_connections = {}
+
+    async def handle_webrtc_candidate(self, receive, send):
+
+        async def respond(status, payload):
+            body = json.dumps(payload).encode("utf-8")
+            await send({
+                "type": "http.response.start",
+                "status": status,
+                "headers": [
+                    (b"content-type", b"application/json"),
+                    (b"content-length", str(len(body)).encode("ascii"))
+                ]
+            })
+            await send({
+                "type": "http.response.body",
+                "body": body
+            })
+
+        try:
+            body = b""
+
+            while True:
+                message = await receive()
+
+                if message["type"] == "http.disconnect":
+                    return
+
+                body += message.get("body", b"")
+
+                if len(body) > 100_000:
+                    await respond(413, {
+                        "success": False,
+                        "error": "Candidate request is too large."
+                    })
+                    return
+
+                if not message.get("more_body", False):
+                    break
+
+            data = json.loads(body.decode("utf-8"))
+
+            pc_id = data.get("pc_id")
+            session_id = data.get("session_id")
+            candidate_data = data.get("candidate")
+
+            if not isinstance(pc_id, str) or not pc_id.strip():
+                await respond(400, {
+                    "success": False,
+                    "error": "A valid pc_id is required."
+                })
+                return
+
+            if not isinstance(session_id, str) or not session_id.strip():
+                await respond(400, {
+                    "success": False,
+                    "error": "A valid session_id is required."
+                })
+                return
+
+            entry = self.webrtc_connections.get(pc_id)
+
+            if not entry or entry["session_id"] != session_id:
+                await respond(404, {
+                    "success": False,
+                    "error": "WebRTC connection not found."
+                })
+                return
+
+            candidate = None
+
+            if candidate_data is not None:
+                if not isinstance(candidate_data, dict):
+                    await respond(400, {
+                        "success": False,
+                        "error": "Invalid ICE candidate."
+                    })
+                    return
+
+                candidate_sdp = candidate_data.get("candidate")
+
+                if candidate_sdp:
+                    if not isinstance(candidate_sdp, str):
+                        await respond(400, {
+                            "success": False,
+                            "error": "Invalid candidate SDP."
+                        })
+                        return
+
+                    candidate_sdp = candidate_sdp.removeprefix("candidate:")
+
+                    candidate = candidate_from_sdp(candidate_sdp)
+                    candidate.sdpMid = candidate_data.get("sdpMid")
+                    candidate.sdpMLineIndex = candidate_data.get(
+                        "sdpMLineIndex"
+                    )
+
+                    if (
+                        candidate.sdpMid is None
+                        and candidate.sdpMLineIndex is None
+                    ):
+                        await respond(400, {
+                            "success": False,
+                            "error": "Candidate media information is missing."
+                        })
+                        return
+
+            await entry["connection"].add_ice_candidate(candidate)
+
+            await respond(200, {"success": True})
+
+        except (json.JSONDecodeError, UnicodeDecodeError):
+            await respond(400, {
+                "success": False,
+                "error": "Invalid JSON request."
+            })
+
+        except (ValueError, AssertionError) as exc:
+            await respond(400, {
+                "success": False,
+                "error": str(exc)
+            })
+
+        except Exception:
+            logger.exception("Pipecat WebRTC candidate failed.")
+            await respond(500, {
+                "success": False,
+                "error": "Unable to process ICE candidate."
+            })
 
     async def handle_lifespan(self, receive, send):
 
@@ -187,6 +317,11 @@ class ASGIRouter:
 
             await pipecat_voice_manager.add_worker(worker)
 
+            self.webrtc_connections[connection.pc_id] = {
+                "connection": connection,
+                "session_id": session_id
+            }
+
             await respond(200, {
                 "success": True,
                 "answer": answer
@@ -205,6 +340,7 @@ class ASGIRouter:
 
         except ValueError as exc:
             if connection:
+                self.webrtc_connections.pop(connection.pc_id, None)
                 try:
                     await connection.disconnect()
                 except Exception:
@@ -219,6 +355,7 @@ class ASGIRouter:
             logger.exception("Pipecat WebRTC offer failed.")
 
             if connection:
+                self.webrtc_connections.pop(connection.pc_id, None)
                 try:
                     await connection.disconnect()
                 except Exception:
@@ -244,6 +381,13 @@ class ASGIRouter:
             and scope.get("path") == "/api/voice/webrtc/offer"
         ):
             return await self.handle_webrtc_offer(receive, send)
+
+        if (
+            scope["type"] == "http"
+            and scope.get("method") == "POST"
+            and scope.get("path") == "/api/voice/webrtc/candidate"
+        ):
+            return await self.handle_webrtc_candidate(receive, send)
 
         return await self.http_application(scope, receive, send)
 

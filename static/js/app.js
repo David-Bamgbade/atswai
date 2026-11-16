@@ -682,17 +682,70 @@
                 console.log("[ICE] Connection state:", voicePeerConnection.iceConnectionState);
             });
 
-            voicePeerConnection.addEventListener("icecandidate", event => {
-                if (!event.candidate) {
-                    console.log("[ICE] Candidate gathering completed.");
+            // Trickle ICE: buffer candidates until the backend returns its pc_id
+            const voiceSessionId = currentSessionId;
+            let serverPcId = null;
+            let canSendIceCandidates = false;
+            const pendingIceCandidates = [];
+            let candidateSendQueue = Promise.resolve();
+
+            const sendIceCandidate = async candidate => {
+                const response = await fetch("/api/voice/webrtc/candidate", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        session_id: voiceSessionId,
+                        pc_id: serverPcId,
+                        candidate
+                    })
+                });
+
+                const data = await response.json();
+
+                if (!response.ok || !data.success) {
+                    throw new Error(
+                        data.error || "Unable to send ICE candidate."
+                    );
+                }
+            };
+
+            const queueIceCandidate = candidate => {
+                if (!serverPcId || !canSendIceCandidates) {
+                    pendingIceCandidates.push(candidate);
                     return;
                 }
 
-                const candidate = event.candidate.candidate;
-                const type = candidate.match(/\btyp\s+(host|srflx|relay)\b/)?.[1] || "unknown";
-                const protocol = candidate.split(" ")[2] || "unknown";
+                candidateSendQueue = candidateSendQueue
+                    .then(() => sendIceCandidate(candidate))
+                    .catch(error => {
+                        console.error("[ICE] Candidate delivery failed:", error);
+                    });
+            };
+
+            const flushPendingIceCandidates = () => {
+                canSendIceCandidates = true;
+
+                while (pendingIceCandidates.length > 0) {
+                    queueIceCandidate(pendingIceCandidates.shift());
+                }
+            };
+
+            voicePeerConnection.addEventListener("icecandidate", event => {
+                if (!event.candidate) {
+                    console.log("[ICE] Candidate gathering completed.");
+                    queueIceCandidate(null);
+                    return;
+                }
+
+                const candidateText = event.candidate.candidate;
+                const type = candidateText.match(/\btyp\s+(host|srflx|relay)\b/)?.[1] || "unknown";
+                const protocol = candidateText.split(" ")[2] || "unknown";
 
                 console.log(`[ICE] Candidate found: type=${type}, protocol=${protocol}`);
+
+                queueIceCandidate(event.candidate.toJSON());
             });
             setVoiceStatus("Creating secure voice connection...");
 
@@ -700,8 +753,7 @@
 
             await voicePeerConnection.setLocalDescription(offer);
 
-            await waitForIceGatheringComplete(voicePeerConnection);
-
+            // Send the initial offer immediately; ICE candidates will follow separately.
             setVoiceStatus("Connecting to AI interviewer...");
 
             const response = await fetch("/api/voice/webrtc/offer", {
@@ -726,11 +778,21 @@
                 );
             }
 
+            serverPcId = data.answer.pc_id;
+
+            if (!serverPcId) {
+                throw new Error(
+                    "The backend response did not include a WebRTC connection ID."
+                );
+            }
+
             await voicePeerConnection.setRemoteDescription(
                 new RTCSessionDescription(data.answer)
             );
 
-            console.log("Pipecat WebRTC answer received.");
+            flushPendingIceCandidates();
+
+            console.log("Pipecat WebRTC answer received. ICE candidate delivery enabled.");
 
         } catch (error) {
 
