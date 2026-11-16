@@ -278,6 +278,32 @@ async def create_interview_worker(connection, session_id):
         )
     )
 
+    ice_servers_config = [
+    {
+        "urls": "stun:stun.relay.metered.ca:80"
+    },
+    {
+        "urls": "turn:global.relay.metered.ca:80",
+        "username": "a427892e0c33b2c8001c1d43",   
+        "credential": "iAEiWjWk+STZ/vGp"  
+    },
+    {
+        "urls": "turn:global.relay.metered.ca:80?transport=tcp",
+        "username": "a427892e0c33b2c8001c1d43",   
+        "credential": "iAEiWjWk+STZ/vGp"  
+    },
+    {
+        "urls": "turn:global.relay.metered.ca:443",
+        "username": "a427892e0c33b2c8001c1d43",   
+        "credential": "iAEiWjWk+STZ/vGp"  
+    },
+    {
+        "urls": "turns:global.relay.metered.ca:443?transport=tcp",
+        "username": "a427892e0c33b2c8001c1d43",
+        "credential": "iAEiWjWk+STZ/vGp",
+    }
+]
+
     transport = SmallWebRTCTransport(
         webrtc_connection=connection,
         params=TransportParams(
@@ -287,6 +313,7 @@ async def create_interview_worker(connection, session_id):
             audio_out_sample_rate=24000,
             audio_in_channels=1,
             audio_out_channels=1
+            ice_servers=ice_servers_config
         )
     )
 
