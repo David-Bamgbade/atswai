@@ -541,7 +541,26 @@ document.addEventListener("DOMContentLoaded", () => {
                 }
             });
 
-            voicePeerConnection = new RTCPeerConnection();
+            voicePeerConnection = new RTCPeerConnection({
+    iceServers: [
+        { urls: "stun:stun.relay.metered.ca:80" },
+        {
+            urls: "turn:global.relay.metered.ca:80",
+            username: "a427892e0c33b2c8001c1d43",
+            credential: "iAEiWjWk+STZ/vGp"
+        },
+        {
+            urls: "turn:global.relay.metered.ca:80?transport=tcp",
+            username: "a427892e0c33b2c8001c1d43",
+            credential: "iAEiWjWk+STZ/vGp"
+        },
+        {
+            urls: "turn:global.relay.metered.ca:443",
+            username: "a427892e0c33b2c8001c1d43",
+            credential: "iAEiWjWk+STZ/vGp"
+        }
+    ]
+});
 
             const transcriptChannel = voicePeerConnection.createDataChannel("chat");
 
