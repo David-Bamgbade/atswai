@@ -313,7 +313,8 @@ async def create_interview_worker(connection, session_id):
             audio_out_sample_rate=24000,
             audio_in_channels=1,
             audio_out_channels=1,
-            ice_servers=ice_servers_config
+            ice_servers=ice_servers_config,
+            ice_transport_policy="relay" 
         )
     )
 
