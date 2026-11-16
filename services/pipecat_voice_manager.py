@@ -1,0 +1,75 @@
+﻿import asyncio
+import logging
+
+from pipecat.workers.runner import WorkerRunner
+
+
+logger = logging.getLogger("pipecat_voice_manager")
+
+
+class PipecatVoiceManager:
+
+    def __init__(self):
+        self.runner = None
+        self.runner_task = None
+        self.ready = None
+
+    async def start(self):
+        if self.runner_task and not self.runner_task.done():
+            return
+
+        self.ready = asyncio.Event()
+
+        self.runner = WorkerRunner(
+            handle_sigint=False,
+            handle_sigterm=False
+        )
+
+        @self.runner.event_handler("on_ready")
+        async def on_ready(runner):
+            logger.info("Pipecat WorkerRunner is ready.")
+            self.ready.set()
+
+        self.runner_task = asyncio.create_task(
+            self.runner.run(auto_end=False),
+            name="pipecat-worker-runner"
+        )
+
+        try:
+            await asyncio.wait_for(self.ready.wait(), timeout=20)
+
+        except Exception:
+            if self.runner_task.done():
+                await self.runner_task
+
+            await self.stop()
+            raise
+
+        logger.info("Pipecat voice manager started.")
+
+    async def add_worker(self, worker):
+        if not self.runner or not self.ready or not self.ready.is_set():
+            raise RuntimeError("Pipecat voice manager is not ready.")
+
+        await self.runner.add_workers(worker)
+
+    async def stop(self):
+        if self.runner and self.runner_task:
+            if not self.runner_task.done():
+                await self.runner.cancel(reason="ASGI shutdown")
+
+            try:
+                await self.runner_task
+
+            except asyncio.CancelledError:
+                pass
+
+            logger.info("Pipecat voice manager stopped.")
+
+        self.runner = None
+        self.runner_task = None
+        self.ready = None
+
+
+pipecat_voice_manager = PipecatVoiceManager()
+

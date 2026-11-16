@@ -2,6 +2,8 @@
 from threading import Lock
 import uuid
 
+from services.gemini_service import gemini_service
+
 
 class ConversationManager:
 
@@ -149,7 +151,7 @@ class ConversationManager:
             session["interview_history"].append(message.copy())
 
             return message.copy()
-    def _handle_interview_onboarding(self, session_id, message):
+    def _handle_interview_onboarding(self, session_id, message, candidate_ready=False):
         """Handle interview onboarding without invoking RAG or scoring."""
 
         text = message.strip()
@@ -237,19 +239,9 @@ class ConversationManager:
 
             elif stage == "awaiting_readiness":
 
-                if normalized in (
-                    "yes",
-                    "yes i'm ready",
-                    "yes i am ready",
-                    "ready",
-                    "let's begin",
-                    "lets begin",
-                    "start",
-                    "begin"
-                ):
+                if candidate_ready:
                     session["candidate_ready"] = True
                     session["interview_stage"] = "in_progress"
-
                     answer = None
 
                 else:
@@ -328,9 +320,56 @@ class ConversationManager:
 
             if stage != "in_progress":
 
+                is_ready = False
+
+                if stage == "awaiting_readiness":
+                    readiness_prompt = f"""
+You are classifying whether a candidate is ready to begin a formal job interview.
+
+The candidate was asked: "Are you ready to begin your interview?"
+
+Candidate response:
+{question}
+
+Determine the candidate's actual intent from the meaning and context of their response.
+
+Return JSON only, using this exact structure:
+{{"ready": true}}
+
+Rules:
+- ready=true only when the candidate clearly agrees to begin now.
+- ready=false when the candidate declines, requests more time, is uncertain, asks a question, or gives an unrelated response.
+- Interpret natural language, conversational wording, and reasonable variations.
+- Do not require exact phrases or specific keywords.
+- Do not assume readiness from politeness or a general affirmative that does not clearly indicate consent.
+"""
+                    try:
+                        readiness_result = await gemini_service.generate(
+                            readiness_prompt,
+                            json_mode=True
+                        )
+
+                        import json
+                        decision = json.loads(
+                            readiness_result["answer"]
+                        )
+
+                        is_ready = (
+                            isinstance(decision, dict)
+                            and decision.get("ready") is True
+                        )
+
+                    except Exception as error:
+                        print(
+                            f"Readiness classification failed: {error}",
+                            flush=True
+                        )
+                        is_ready = False
+
                 onboarding = self._handle_interview_onboarding(
                     session_id,
-                    question
+                    question,
+                    candidate_ready=is_ready
                 )
 
                 answer = onboarding.get("answer")
@@ -515,6 +554,7 @@ class ConversationManager:
 
 
 conversation_manager = ConversationManager()
+
 
 
 

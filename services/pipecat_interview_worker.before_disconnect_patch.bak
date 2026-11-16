@@ -1,0 +1,214 @@
+﻿import logging
+
+from config import GEMINI_API_KEY
+from services.conversation_manager import conversation_manager
+
+from pipecat.adapters.llm.schemas.function_schema import FunctionSchema
+from pipecat.frames.frames import LLMRunFrame
+from pipecat.pipeline.pipeline import Pipeline
+from pipecat.pipeline.worker import PipelineWorker, PipelineParams
+from pipecat.processors.aggregators.llm_context import LLMContext
+from pipecat.processors.aggregators.llm_context import LLMContextFrame
+from pipecat.services.google.gemini_live.llm import (
+    GeminiLiveLLMService,
+    GeminiModalities
+)
+from pipecat.transports.smallwebrtc.transport import (
+    SmallWebRTCTransport,
+    TransportParams
+)
+
+logger = logging.getLogger("pipecat_interview_worker")
+
+
+SYSTEM_INSTRUCTION = """
+You are a professional, conversational AI interviewer.
+
+Speak naturally and clearly. Keep responses concise and relevant.
+Listen carefully to the candidate and allow them to finish speaking.
+
+You must use the submit_candidate_response tool whenever the candidate
+provides an interview response or answers an onboarding question.
+
+Never invent interview questions, scores, feedback, or candidate details.
+The application backend controls onboarding, interview progression,
+question selection, retrieval, and evaluation.
+
+After receiving a backend response, communicate it naturally.
+Do not expose internal tools or implementation details.
+"""
+
+
+async def create_interview_worker(connection, session_id):
+
+    if not GEMINI_API_KEY:
+        raise RuntimeError("GEMINI_API_KEY is not configured.")
+
+    session = conversation_manager.get_session(session_id)
+
+    if not session:
+        raise ValueError("Interview session not found.")
+
+    if session.get("mode") != "interview":
+        raise ValueError("This is not an interview session.")
+
+    if session.get("status") != "active":
+        raise ValueError("This interview session is not active.")
+
+    if session.get("interview_stage") != "in_progress":
+        raise ValueError("Complete interview onboarding before starting voice mode.")
+
+    opening_question = session.get("current_question")
+
+    if not isinstance(opening_question, str) or not opening_question.strip():
+        raise ValueError("No pending interview question was found.")
+
+    candidate_context = (
+        f"Candidate name: {session.get('candidate_name') or 'Not provided'}\\n"
+        f"Target role: {session.get('job_role')}\\n"
+        f"Education and experience: {session.get('candidate_background') or 'Not provided'}\\n"
+        f"Current interview question: {opening_question.strip()}"
+    )
+
+    async def submit_candidate_response(params):
+
+        candidate_response = params.arguments.get("response")
+
+        if not isinstance(candidate_response, str):
+            await params.result_callback({
+                "error": "Candidate response must be text."
+            })
+            return
+
+        candidate_response = candidate_response.strip()
+
+        if not candidate_response:
+            await params.result_callback({
+                "error": "Candidate response cannot be empty."
+            })
+            return
+
+        if len(candidate_response) > 10000:
+            await params.result_callback({
+                "error": "Candidate response is too long."
+            })
+            return
+
+        try:
+            result = await conversation_manager.process_message(
+                session_id=session_id,
+                question=candidate_response,
+                top_k=5
+            )
+
+            answer = result.get("answer")
+
+            if not isinstance(answer, str) or not answer.strip():
+                raise RuntimeError("Backend returned an empty response.")
+
+            await params.result_callback(answer)
+
+        except Exception:
+            logger.exception(
+                "Unable to process candidate response for session %s",
+                session_id
+            )
+
+            await params.result_callback(
+                "I encountered a problem processing that response. "
+                "Please try again."
+            )
+
+    response_tool = FunctionSchema(
+        name="submit_candidate_response",
+        description=(
+            "Submit the candidate's spoken response to the interview "
+            "backend. Use this for onboarding answers and interview answers. "
+            "The backend determines the next step and returns what to say."
+        ),
+        properties={
+            "response": {
+                "type": "string",
+                "description": "The candidate's complete spoken response."
+            }
+        },
+        required=["response"],
+        handler=submit_candidate_response
+    )
+
+    context = LLMContext(
+        messages=[
+            {
+                "role": "user",
+                "content": (
+                    "You are joining an interview that has already completed "
+                    "its onboarding. Here is the verified interview context:\\n"
+                    f"{candidate_context}\\n\\n"
+                    "Speak the current interview question exactly as provided. "
+                    "Do not generate another question or call the backend "
+                    "for this opening question. After the candidate answers, "
+                    "use submit_candidate_response to obtain the next response "
+                    "from the application backend."
+                )
+            }
+        ],
+        tools=[response_tool]
+    )
+
+    gemini = GeminiLiveLLMService(
+        api_key=GEMINI_API_KEY,
+        settings=GeminiLiveLLMService.Settings(
+            model="models/gemini-3.8-live",
+            voice="Charon",
+            modalities=GeminiModalities.AUDIO,
+            system_instruction=SYSTEM_INSTRUCTION
+        )
+    )
+
+    transport = SmallWebRTCTransport(
+        webrtc_connection=connection,
+        params=TransportParams(
+            audio_in_enabled=True,
+            audio_out_enabled=True,
+            audio_in_sample_rate=16000,
+            audio_out_sample_rate=24000,
+            audio_in_channels=1,
+            audio_out_channels=1
+        )
+    )
+
+    pipeline = Pipeline([
+        transport.input(),
+        gemini,
+        transport.output()
+    ])
+
+    worker = PipelineWorker(
+        pipeline,
+        name=f"interview-{session_id}",
+        conversation_id=session_id,
+        app_resources={
+            "session_id": session_id
+        },
+        params=PipelineParams(
+            audio_in_sample_rate=16000,
+            audio_out_sample_rate=24000
+        ),
+        idle_timeout_secs=3600,
+        cancel_on_idle_timeout=False
+    )
+
+    async def on_client_connected(transport, client):
+        logger.info("Candidate connected to Pipecat voice session.")
+
+        await worker.queue_frames([
+            LLMContextFrame(context),
+            LLMRunFrame()
+        ])
+
+    transport.add_event_handler(
+        "on_client_connected",
+        on_client_connected
+    )
+
+    return worker

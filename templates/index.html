@@ -1,4 +1,3 @@
-﻿
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -40,18 +39,20 @@
                 <span class="nav-icon">🎙️</span>
                 <span>AI Interviewer</span>
             </button>
-<button id="examinerNav" class="nav-item" data-mode="examiner">
-    <span class="nav-icon">✎</span>
-    <span>AI Examiner</span>
-</button>
+            
+            <button id="examinerNav" class="nav-item" data-mode="examiner">
+                <span class="nav-icon">✎</span>
+                <span>AI Examiner</span>
+            </button>
         </div>
 
         <div class="sidebar-section">
             <p class="section-label">YOUR LEARNING</p>
 
-            <button class="nav-item" id="newChatButton">
-                <span class="nav-icon">+</span>
-                <span>New conversation</span>
+            <!-- ADDED BUTTON HERE -->
+            <button class="nav-item" id="contactBtn">
+                <span class="nav-icon">✉️</span>
+                <span>Contact Developer</span>
             </button>
         </div>
 
@@ -83,65 +84,67 @@
             </div>
 
             <div class="topbar-right">
-                <span class="model-label">GEMINI POWERED</span>
+                <span class="model-label">Powered By ATSWA Study Materials</span>
                 <div class="gemini-indicator"></div>
             </div>
         </header>
 
 
-        <!-- CHAT WORKSPACE -->
+        <!-- EXAM WORKSPACE -->
         <section id="examWorkspace" class="exam-workspace" hidden>
-    <div class="exam-start-card">
-        <div class="exam-heading">
-            <span class="exam-label">ATSWA EXAMINATION CENTRE</span>
-            <h1>Test your knowledge.<br><span>Measure your readiness.</span></h1>
-            <p>Take a structured ATSWA examination based on the official syllabus. Your answers will be marked and you'll receive your results and feedback.</p>
-        </div>
+            <div class="exam-start-card">
+                <div class="exam-heading">
+                    <span class="exam-label">ATSWA EXAMINATION CENTRE</span>
+                    <h1>Test your knowledge.<br><span>Measure your readiness.</span></h1>
+                    <p>Take a structured ATSWA examination based on the official syllabus. Your answers will be marked and you'll receive your results and feedback.</p>
+                </div>
 
-        <form id="examStartForm">
-            <label for="paperSelect">Select examination paper</label>
-            <select id="paperSelect" required>
-                <option value="">Choose a paper</option>
-                <option value="1">Paper 1 — Basic Accounting</option>
-                <option value="2">Paper 2 — Economics</option>
-                <option value="3">Paper 3 — Business Law</option>
-                <option value="4">Paper 4 — Communication Skills</option>
-                <option value="5">Paper 5 — Financial Accounting</option>
-                <option value="6">Paper 6 — Public Sector Accounting</option>
-                <option value="7">Paper 7 — Quantitative Analysis</option>
-                <option value="8">Paper 8 — Information Technology</option>
-                <option value="9">Paper 9 — Principles of Auditing &amp; Assurance</option>
-                <option value="10">Paper 10 — Cost Accounting</option>
-                <option value="11">Paper 11 — Taxation</option>
-                <option value="12">Paper 12 — Management</option>
-            </select>
+                <form id="examStartForm">
+                    <label for="paperSelect">Select examination paper</label>
+                    <select id="paperSelect" required>
+                        <option value="">Choose a paper</option>
+                        <option value="1">Paper 1 — Basic Accounting</option>
+                        <option value="2">Paper 2 — Economics</option>
+                        <option value="3">Paper 3 — Business Law</option>
+                        <option value="4">Paper 4 — Communication Skills</option>
+                        <option value="5">Paper 5 — Financial Accounting</option>
+                        <option value="6">Paper 6 — Public Sector Accounting</option>
+                        <option value="7">Paper 7 — Quantitative Analysis</option>
+                        <option value="8">Paper 8 — Information Technology</option>
+                        <option value="9">Paper 9 — Principles of Auditing &amp; Assurance</option>
+                        <option value="10">Paper 10 — Cost Accounting</option>
+                        <option value="11">Paper 11 — Taxation</option>
+                        <option value="12">Paper 12 — Management</option>
+                    </select>
 
-            <div class="exam-info-grid">
-                <div>
-                    <strong>3 hours</strong>
-                    <span>Exam duration</span>
-                </div>
-                <div>
-                    <strong>100 marks</strong>
-                    <span>Total marks</span>
-                </div>
-                <div>
-                    <strong>12 papers</strong>
-                    <span>Available subjects</span>
-                </div>
+                    <div class="exam-info-grid">
+                        <div>
+                            <strong>3 hours</strong>
+                            <span>Exam duration</span>
+                        </div>
+                        <div>
+                            <strong>100 marks</strong>
+                            <span>Total marks</span>
+                        </div>
+                        <div>
+                            <strong>12 papers</strong>
+                            <span>Available subjects</span>
+                        </div>
+                    </div>
+
+                    <p class="exam-notice">
+                        Your examination timer starts when you begin. Make sure you have enough time to complete the paper before starting.
+                    </p>
+
+                    <button type="submit" id="startExamButton" class="exam-primary-button">
+                        Start Examination
+                    </button>
+                </form>
             </div>
+        </section>
 
-            <p class="exam-notice">
-                Your examination timer starts when you begin. Make sure you have enough time to complete the paper before starting.
-            </p>
-
-            <button type="submit" id="startExamButton" class="exam-primary-button">
-                Start Examination
-            </button>
-        </form>
-    </div>
-</section>
-<section class="chat-workspace" id="chatWorkspace">
+        <!-- CHAT WORKSPACE -->
+        <section class="chat-workspace" id="chatWorkspace">
 
             <div class="welcome-screen" id="welcomeScreen">
 
@@ -220,7 +223,7 @@
                     </button>
 
                     <button type="submit" id="sendButton" aria-label="Send message">
-                        <span>â†‘</span>
+                        <span>&#8593;</span>
                     </button>
 
                 </form>
@@ -235,6 +238,33 @@
 
         </section>
 
+        <!-- CONTACT DEVELOPER FORM (Hidden by default, Made Bigger) -->
+        <section id="contactWorkspace" class="chat-workspace" style="display: none; align-items: center; justify-content: center; width: 100%;">
+            <!-- Increased max-width to 600px, increased padding to 40px -->
+            <div class="exam-start-card" style="max-width: 600px; width: 100%; padding: 40px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); background: #fff;">
+                <div class="exam-heading" style="margin-bottom: 30px;">
+                    <span class="exam-label">SUPPORT</span>
+                    <h1>Contact the<br><span>Developer.</span></h1>
+                    <p style="font-size: 1rem; margin-top: 10px; color: #555;">Found a bug? Have a suggestion? Want to collaborate? Send a message directly to the development team.</p>
+                </div>
+
+                <form action="https://formspree.io/f/mnjjypkl" method="POST" style="display: flex; flex-direction: column; gap: 20px;">
+                    <label style="display: flex; flex-direction: column; gap: 8px; font-weight: 600; font-size: 0.95rem; color: #333;">
+                        Your email:
+                        <input type="email" name="email" required style="padding: 12px; border-radius: 8px; border: 1px solid #ccc; font-family: inherit; font-size: 1rem; outline: none; transition: border-color 0.2s;">
+                    </label>
+                    <label style="display: flex; flex-direction: column; gap: 8px; font-weight: 600; font-size: 0.95rem; color: #333;">
+                        Your message:
+                        <textarea name="message" required rows="6" style="padding: 12px; border-radius: 8px; border: 1px solid #ccc; font-family: inherit; font-size: 1rem; resize: vertical; outline: none; transition: border-color 0.2s;"></textarea>
+                    </label>
+                    
+                    <button type="submit" class="exam-primary-button" style="margin-top: 10px; width: 100%; padding: 12px; font-size: 1rem;">
+                        Send Message
+                    </button>
+                </form>
+            </div>
+        </section>
+
     </main>
 
 </div>
@@ -243,8 +273,45 @@
 <script src="https://cdn.jsdelivr.net/npm/dompurify@3/dist/purify.min.js"></script>
 <script src="{{ url_for('static', filename='js/app.js') }}"></script>
 
+<!-- SCRIPT TO HANDLE CONTACT FORM TOGGLE AND FIX NAVIGATION -->
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+        const contactBtn = document.getElementById('contactBtn');
+        const contactWorkspace = document.getElementById('contactWorkspace');
+        const chatWorkspace = document.getElementById('chatWorkspace');
+        const examWorkspace = document.getElementById('examWorkspace');
+        
+        const studyNav = document.getElementById('studyNav');
+        const interviewNav = document.getElementById('interviewNav');
+        const examinerNav = document.getElementById('examinerNav');
+
+        // 1. Show Contact Form when button is clicked
+        contactBtn.addEventListener('click', function() {
+            chatWorkspace.style.display = 'none';
+            examWorkspace.hidden = true;
+            
+            // Show the form
+            contactWorkspace.style.display = 'flex';
+            
+            // Update topbar
+            document.getElementById('topbarTitle').textContent = 'Contact Support';
+            document.getElementById('breadcrumbMode').textContent = 'SUPPORT';
+
+            // Manage active button styles
+            document.querySelectorAll('.nav-item').forEach(btn => btn.classList.remove('active'));
+            this.classList.add('active');
+        });
+
+        // 2. Hide Contact Form when navigating back to Study/Interview/Examiner
+        function hideContactForm() {
+            contactWorkspace.style.display = 'none';
+        }
+
+        studyNav.addEventListener('click', hideContactForm);
+        interviewNav.addEventListener('click', hideContactForm);
+        examinerNav.addEventListener('click', hideContactForm);
+    });
+</script>
+
 </body>
 </html>
-
-
-

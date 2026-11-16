@@ -1,4 +1,4 @@
-﻿document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", () => {
 
     // ==========================================
     // DOM ELEMENTS
@@ -59,6 +59,10 @@
     let voiceStopping = false;
     let nextPlaybackTime = 0;
     let voiceOutputTranscript = "";
+
+    // PIPECAT WEBRTC STATE
+    let voicePeerConnection = null;
+    let voiceRemoteAudio = null;
 
     // ==========================================
     // VOICE INTERVIEW AUDIO PIPELINE
@@ -354,7 +358,7 @@
                     if (sendButton) sendButton.disabled = true;
 
                     setVoiceStatus(
-                        `Voice interview active · ${data.model}`
+                        `Voice interview active Â· ${data.model}`
                     );
 
                     try {
@@ -425,14 +429,262 @@
     }
 
 
+    async function stopPipecatVoiceInterview(showMessage = true) {
+
+        voiceActive = false;
+        voiceConnecting = false;
+
+        if (voicePeerConnection) {
+            voicePeerConnection.ontrack = null;
+            voicePeerConnection.onconnectionstatechange = null;
+            voicePeerConnection.close();
+            voicePeerConnection = null;
+        }
+
+        if (voiceStream) {
+            voiceStream.getTracks().forEach(track => track.stop());
+            voiceStream = null;
+        }
+
+        if (voiceRemoteAudio) {
+            voiceRemoteAudio.pause();
+            voiceRemoteAudio.srcObject = null;
+            voiceRemoteAudio.remove();
+            voiceRemoteAudio = null;
+        }
+
+        if (voiceButton) {
+            voiceButton.disabled = false;
+            voiceButton.classList.remove("recording");
+            voiceButton.title = "Start voice interview";
+            voiceButton.setAttribute("aria-label", "Start voice interview");
+        }
+
+        if (messageInput) messageInput.disabled = false;
+        if (sendButton) sendButton.disabled = false;
+
+        setVoiceStatus(
+            showMessage ? "Voice interview disconnected." : "",
+            showMessage
+        );
+    }
+
+
+    function waitForIceGatheringComplete(peerConnection) {
+
+        if (peerConnection.iceGatheringState === "complete") {
+            return Promise.resolve();
+        }
+
+        return new Promise((resolve, reject) => {
+
+            const timeout = setTimeout(() => {
+                peerConnection.removeEventListener(
+                    "icegatheringstatechange",
+                    checkState
+                );
+                reject(new Error("WebRTC ICE gathering timed out."));
+            }, 15000);
+
+            function checkState() {
+                if (peerConnection.iceGatheringState === "complete") {
+                    clearTimeout(timeout);
+                    peerConnection.removeEventListener(
+                        "icegatheringstatechange",
+                        checkState
+                    );
+                    resolve();
+                }
+            }
+
+            peerConnection.addEventListener(
+                "icegatheringstatechange",
+                checkState
+            );
+        });
+    }
+
+
+    async function startPipecatVoiceInterview() {
+
+        if (
+            currentMode !== "interview" ||
+            !currentSessionId ||
+            voiceConnecting ||
+            voiceActive ||
+            isCreatingSession ||
+            isSendingMessage
+        ) {
+            return;
+        }
+
+        voiceConnecting = true;
+
+        if (voiceButton) voiceButton.disabled = true;
+
+        setVoiceStatus("Requesting microphone access...");
+
+        try {
+
+            if (!navigator.mediaDevices?.getUserMedia) {
+                throw new Error(
+                    "Microphone access requires HTTPS or localhost."
+                );
+            }
+
+            voiceStream = await navigator.mediaDevices.getUserMedia({
+                audio: {
+                    echoCancellation: true,
+                    noiseSuppression: true,
+                    autoGainControl: true,
+                    channelCount: 1
+                }
+            });
+
+            voicePeerConnection = new RTCPeerConnection();
+
+            const transcriptChannel = voicePeerConnection.createDataChannel("chat");
+
+            transcriptChannel.onopen = () => {
+                console.log("Interview transcript data channel connected.");
+            };
+
+            transcriptChannel.onmessage = event => {
+                try {
+                    const data = JSON.parse(event.data);
+
+                    if (data.type === "transcript" && data.text?.trim()) {
+                        const role = data.role === "user" ? "user" : "ai";
+                        addTranscriptMessage(role, data.text.trim());
+                    }
+                } catch (error) {
+                    console.error("Transcript message error:", error);
+                }
+            };
+
+            transcriptChannel.onerror = error => {
+                console.error("Transcript data channel error:", error);
+            };
+
+            voiceStream.getTracks().forEach(track => {
+                voicePeerConnection.addTrack(track, voiceStream);
+            });
+
+            voiceRemoteAudio = document.createElement("audio");
+            voiceRemoteAudio.autoplay = true;
+            voiceRemoteAudio.playsInline = true;
+            voiceRemoteAudio.style.display = "none";
+            document.body.appendChild(voiceRemoteAudio);
+
+            voicePeerConnection.ontrack = async event => {
+
+                const remoteStream = event.streams[0];
+
+                if (remoteStream) {
+                    voiceRemoteAudio.srcObject = remoteStream;
+
+                    try {
+                        await voiceRemoteAudio.play();
+                    } catch (error) {
+                        console.error("Remote audio playback failed:", error);
+                        setVoiceStatus(
+                            "Voice connected. Allow audio playback in your browser."
+                        );
+                    }
+                }
+            };
+
+            voicePeerConnection.onconnectionstatechange = () => {
+
+                const state = voicePeerConnection?.connectionState;
+
+                console.log("Pipecat WebRTC state:", state);
+
+                if (state === "connected") {
+
+                    voiceConnecting = false;
+                    voiceActive = true;
+
+                    if (voiceButton) {
+                        voiceButton.disabled = false;
+                        voiceButton.classList.add("recording");
+                        voiceButton.title = "Stop voice interview";
+                        voiceButton.setAttribute(
+                            "aria-label",
+                            "Stop voice interview"
+                        );
+                    }
+
+                    if (messageInput) messageInput.disabled = true;
+                    if (sendButton) sendButton.disabled = true;
+
+                    setVoiceStatus("Voice interview connected.");
+                }
+
+                if (state === "failed" || state === "closed") {
+                    void stopPipecatVoiceInterview(true);
+                }
+            };
+
+            setVoiceStatus("Creating secure voice connection...");
+
+            const offer = await voicePeerConnection.createOffer();
+
+            await voicePeerConnection.setLocalDescription(offer);
+
+            await waitForIceGatheringComplete(voicePeerConnection);
+
+            setVoiceStatus("Connecting to AI interviewer...");
+
+            const response = await fetch("/api/voice/webrtc/offer", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    session_id: currentSessionId,
+                    offer: {
+                        type: voicePeerConnection.localDescription.type,
+                        sdp: voicePeerConnection.localDescription.sdp
+                    }
+                })
+            });
+
+            const data = await response.json();
+
+            if (!response.ok || !data.success || !data.answer) {
+                throw new Error(
+                    data.error || "Unable to establish WebRTC connection."
+                );
+            }
+
+            await voicePeerConnection.setRemoteDescription(
+                new RTCSessionDescription(data.answer)
+            );
+
+            console.log("Pipecat WebRTC answer received.");
+
+        } catch (error) {
+
+            console.error("Pipecat WebRTC startup failed:", error);
+
+            await stopPipecatVoiceInterview(false);
+
+            setVoiceStatus(
+                error.message || "Unable to start the voice interview."
+            );
+        }
+    }
+
+
     if (voiceButton) {
 
         voiceButton.addEventListener("click", () => {
 
             if (voiceActive || voiceConnecting) {
-                void stopVoiceInterview(true);
+                void stopPipecatVoiceInterview(true);
             } else {
-                void startVoiceInterview();
+                void startPipecatVoiceInterview();
             }
 
         });
@@ -482,7 +734,7 @@
             <button class="suggestion-card"
                 data-question="Start my interview. Please introduce yourself and begin with the first relevant interview question.">
 
-                <span class="suggestion-icon">Ã¢Å“Â¦</span>
+                <span class="suggestion-icon"></span>
                 <strong>Start Interview</strong>
                 <p>Begin your professional interview.</p>
 
@@ -492,7 +744,7 @@
             <button class="suggestion-card"
                 data-question="Ask me technical questions relevant to my job role.">
 
-                <span class="suggestion-icon">Ã¢â€”Ë†</span>
+                <span class="suggestion-icon"></span>
                 <strong>Technical Questions</strong>
                 <p>Test your professional knowledge.</p>
 
@@ -502,7 +754,7 @@
             <button class="suggestion-card"
                 data-question="Ask me practical scenario-based questions relevant to my job role.">
 
-                <span class="suggestion-icon">Ã¢Å’Ëœ</span>
+                <span class="suggestion-icon"></span>
                 <strong>Practical Scenarios</strong>
                 <p>Test how you handle workplace situations.</p>
 
@@ -512,7 +764,7 @@
             <button class="suggestion-card"
                 data-question="Assess my professional knowledge and ask challenging questions relevant to my job role.">
 
-                <span class="suggestion-icon">Ã¢â€”Å½</span>
+                <span class="suggestion-icon"></span>
                 <strong>Professional Assessment</strong>
                 <p>Evaluate your professional knowledge.</p>
 
@@ -534,7 +786,7 @@
             <button class="suggestion-card"
                 data-question="Explain the fundamental accounting concepts.">
 
-                <span class="suggestion-icon">Ã¢Å“Â¦</span>
+                <span class="suggestion-icon"></span>
                 <strong>Accounting Concepts</strong>
                 <p>Understand fundamental accounting principles.</p>
 
@@ -544,7 +796,7 @@
             <button class="suggestion-card"
                 data-question="What are the responsibilities of an external auditor?">
 
-                <span class="suggestion-icon">Ã¢â€”Ë†</span>
+                <span class="suggestion-icon"></span>
                 <strong>Auditing and Assurance</strong>
                 <p>Explore auditing responsibilities and procedures.</p>
 
@@ -554,7 +806,7 @@
             <button class="suggestion-card"
                 data-question="Explain the difference between financial accounting and management accounting.">
 
-                <span class="suggestion-icon">Ã¢Å’Ëœ</span>
+                <span class="suggestion-icon"></span>
                 <strong>Financial Reporting</strong>
                 <p>Learn how financial information is prepared.</p>
 
@@ -564,7 +816,7 @@
             <button class="suggestion-card"
                 data-question="Give me five ATSWA examination practice questions on taxation.">
 
-                <span class="suggestion-icon">Ã¢â€”Å½</span>
+                <span class="suggestion-icon"></span>
                 <strong>Practice Questions</strong>
                 <p>Test your knowledge with exam-style questions.</p>
 
@@ -615,7 +867,7 @@
 
             currentSessionId = data.session_id;
 
-            if (data.greeting) {
+            if (data.greeting && currentMode !== "interview") {
                 addMessage("ai", data.greeting);
             }
 
@@ -691,7 +943,7 @@
         if (!modeSettings[mode]) return;
 
         if (voiceActive || voiceConnecting) {
-            await stopVoiceInterview(false);
+            await stopPipecatVoiceInterview(false);
         }
 
 
@@ -705,6 +957,7 @@
 
 
         currentMode = mode;
+        document.getElementById("chatWorkspace").classList.toggle("interview-mode", mode === "interview");
         if (voiceButton) voiceButton.hidden = mode !== "interview";
 
         currentJobRole = null;
@@ -766,7 +1019,7 @@
         const created = await createSession();
 
 
-        if (created) {
+        if (created && mode !== "interview") {
 
             messageInput.focus();
 
@@ -868,6 +1121,29 @@
     // ==========================================
     // LOADING INDICATOR
     // ==========================================
+
+    function addTranscriptMessage(role, content) {
+        const text = content.trim();
+        if (!text) return;
+
+        const lastMessage = messagesContainer.lastElementChild;
+
+        if (
+            lastMessage?.dataset.voiceTranscript === "true" &&
+            lastMessage.classList.contains(`${role}-message`)
+        ) {
+            const messageContent = lastMessage.querySelector(".message-content");
+            messageContent.textContent =
+                `${messageContent.textContent} ${text}`.trim();
+        } else {
+            addMessage(role, text);
+            const newMessage = messagesContainer.lastElementChild;
+            newMessage.dataset.voiceTranscript = "true";
+            newMessage.querySelector(".message-content").textContent = text;
+        }
+
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    }
 
     function showLoading() {
 
@@ -1041,6 +1317,7 @@
 
         event.preventDefault();
 
+        if (currentMode === "interview") return;
 
         const question = messageInput.value.trim();
 
@@ -1154,7 +1431,7 @@
         if (currentMode === "examiner" && !forceNew) return;
 
         if (voiceActive || voiceConnecting) {
-            void stopVoiceInterview(false);
+            void stopPipecatVoiceInterview(false);
         }
 
         if (voiceButton) voiceButton.hidden = true;
@@ -1192,18 +1469,18 @@
                     <label for="paperSelect">Select examination paper</label>
                     <select id="paperSelect" required>
                         <option value="">Choose a paper</option>
-                        <option value="1">Paper 1 â€” Basic Accounting</option>
-                        <option value="2">Paper 2 â€” Economics</option>
-                        <option value="3">Paper 3 â€” Business Law</option>
-                        <option value="4">Paper 4 â€” Communication Skills</option>
-                        <option value="5">Paper 5 â€” Financial Accounting</option>
-                        <option value="6">Paper 6 â€” Public Sector Accounting</option>
-                        <option value="7">Paper 7 â€” Quantitative Analysis</option>
-                        <option value="8">Paper 8 â€” Information Technology</option>
-                        <option value="9">Paper 9 â€” Principles of Auditing &amp; Assurance</option>
-                        <option value="10">Paper 10 â€” Cost Accounting</option>
-                        <option value="11">Paper 11 â€” Taxation</option>
-                        <option value="12">Paper 12 â€” Management</option>
+                        <option value="1">Paper 1 Basic Accounting</option>
+                        <option value="2">Paper 2 Economics</option>
+                        <option value="3">Paper 3 Business Law</option>
+                        <option value="4">Paper 4 Communication Skills</option>
+                        <option value="5">Paper 5 Financial Accounting</option>
+                        <option value="6">Paper 6 Public Sector Accounting</option>
+                        <option value="7">Paper 7 Quantitative Analysis</option>
+                        <option value="8">Paper 8 Information Technology</option>
+                        <option value="9">Paper 9 Principles of Auditing &amp; Assurance</option>
+                        <option value="10">Paper 10 Cost Accounting</option>
+                        <option value="11">Paper 11 Taxation</option>
+                        <option value="12">Paper 12 Management</option>
                     </select>
 
                     <div class="exam-info-grid">
@@ -1297,7 +1574,7 @@
                     <div>
                         <span class="exam-label">ATSWA EXAMINATION</span>
                         <h2>${escapeExamHTML(exam.subject)}</h2>
-                        <p>Paper ${escapeExamHTML(exam.paper_number)} Â· ${escapeExamHTML(exam.total_marks)} marks</p>
+                        <p>Paper ${escapeExamHTML(exam.paper_number)} Ã‚Â· ${escapeExamHTML(exam.total_marks)} marks</p>
                     </div>
                     <div class="exam-clock" id="examClock" aria-live="off">${formatExamTime(duration)}</div>
                 </header>
@@ -1677,7 +1954,7 @@
         const rows = (result.question_results || []).map(item => `
             <article class="exam-result-question">
                 <div class="exam-question-heading">
-                    <strong>Section ${escapeExamHTML(item.section)} Â· Question ${escapeExamHTML(item.question_number)}</strong>
+                    <strong>Section ${escapeExamHTML(item.section)} Ã‚Â· Question ${escapeExamHTML(item.question_number)}</strong>
                     <span>${escapeExamHTML(item.awarded_marks)} / ${escapeExamHTML(item.maximum_marks)} marks</span>
                 </div>
                 <p>${escapeExamHTML(item.feedback || "No additional feedback.")}</p>
@@ -1689,7 +1966,7 @@
             <div class="exam-start-card exam-results-card">
                 <span class="exam-label">EXAMINATION RESULTS</span>
                 <h1>${escapeExamHTML(result.performance)}</h1>
-                <p>${escapeExamHTML(result.subject)} Â· Paper ${escapeExamHTML(result.paper_number)}</p>
+                <p>${escapeExamHTML(result.subject)} Ã‚Â· Paper ${escapeExamHTML(result.paper_number)}</p>
 
                 <div class="exam-score">
                     <strong>${escapeExamHTML(result.percentage)}%</strong>
@@ -1723,6 +2000,10 @@
     );
 
 });
+
+
+
+
 
 
 

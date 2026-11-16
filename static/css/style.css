@@ -1242,3 +1242,41 @@ button {
     font-size: 15px;
     color: var(--text, #1f2937);
 }
+
+/* AI INTERVIEWER: TRANSCRIPT-ONLY LAYOUT */
+#chatWorkspace.interview-mode {
+    padding-top: 30px;
+}
+
+#chatWorkspace.interview-mode #welcomeScreen {
+    display: none !important;
+}
+
+#chatWorkspace.interview-mode #messagesContainer {
+    display: block;
+    flex: 1;
+    min-height: 0;
+    width: 100%;
+    max-width: 960px;
+}
+
+#chatWorkspace.interview-mode #messageInput,
+#chatWorkspace.interview-mode #sendButton,
+#chatWorkspace.interview-mode .input-disclaimer {
+    display: none !important;
+}
+
+#chatWorkspace.interview-mode .chat-input-area {
+    max-width: 960px;
+    margin: 12px auto 0;
+}
+
+#chatWorkspace.interview-mode .chat-form {
+    justify-content: center;
+}
+
+#chatWorkspace.interview-mode #voiceButton {
+    display: inline-flex !important;
+}
+
+
