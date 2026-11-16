@@ -472,6 +472,26 @@
 
     function waitForIceGatheringComplete(peerConnection) {
 
+        console.error("[ICE-DEBUG] Starting ICE check:", peerConnection.iceGatheringState);
+
+        peerConnection.addEventListener("icecandidate", event => {
+            if (!event.candidate) {
+                console.error("[ICE-DEBUG] Candidate gathering completed.");
+                return;
+            }
+
+            const candidate = event.candidate.candidate;
+            console.error("[ICE-DEBUG] Candidate:", candidate);
+        });
+
+        peerConnection.addEventListener("icecandidateerror", event => {
+            console.error("[ICE-DEBUG] Candidate error:", {
+                url: event.url,
+                errorCode: event.errorCode,
+                errorText: event.errorText
+            });
+        });
+
         if (peerConnection.iceGatheringState === "complete") {
             return Promise.resolve();
         }
@@ -479,14 +499,27 @@
         return new Promise((resolve, reject) => {
 
             const timeout = setTimeout(() => {
+                console.error("[ICE-DEBUG] GATHERING TIMEOUT:", {
+                    gatheringState: peerConnection.iceGatheringState,
+                    connectionState: peerConnection.connectionState,
+                    iceConnectionState: peerConnection.iceConnectionState,
+                    localDescriptionExists: !!peerConnection.localDescription,
+                    candidates: peerConnection.localDescription?.sdp
+                        ?.split("\r\n")
+                        .filter(line => line.startsWith("a=candidate:")) || []
+                });
+
                 peerConnection.removeEventListener(
                     "icegatheringstatechange",
                     checkState
                 );
+
                 reject(new Error("WebRTC ICE gathering timed out."));
             }, 15000);
 
             function checkState() {
+                console.error("[ICE-DEBUG] Gathering state changed:", peerConnection.iceGatheringState);
+
                 if (peerConnection.iceGatheringState === "complete") {
                     clearTimeout(timeout);
                     peerConnection.removeEventListener(
