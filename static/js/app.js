@@ -1,4 +1,4 @@
-﻿document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", () => {
 
     // ==========================================
     // DOM ELEMENTS
@@ -358,7 +358,7 @@
                     if (sendButton) sendButton.disabled = true;
 
                     setVoiceStatus(
-                        `Voice interview active Ã‚Â· ${data.model}`
+                        `Voice interview active Â· ${data.model}`
                     );
 
                     try {
@@ -574,21 +574,26 @@
                 }
             });
 
+            const iceConfigResponse = await fetch(
+                "/api/voice/ice-servers",
+                { cache: "no-store" }
+            );
+
+            const iceConfig = await iceConfigResponse.json();
+
+            if (
+                !iceConfigResponse.ok ||
+                !iceConfig.success ||
+                !Array.isArray(iceConfig.iceServers)
+            ) {
+                throw new Error(
+                    iceConfig.error || "Unable to retrieve TURN server configuration."
+                );
+            }
+
             voicePeerConnection = new RTCPeerConnection({
-    iceServers: [
-        { urls: "stun:stun.relay.metered.ca:80" },
-        {
-            urls: "turn:global.relay.metered.ca:80",
-            username: "a427892e0c33b2c8001c1d43",
-            credential: "iAEiWjWk+STZ/vGp"
-        },
-        {
-            urls: "turn:global.relay.metered.ca:443",
-            username: "a427892e0c33b2c8001c1d43",
-            credential: "iAEiWjWk+STZ/vGp"
-        }
-    ]
-});
+                iceServers: iceConfig.iceServers
+            });
 
             const transcriptChannel = voicePeerConnection.createDataChannel("chat");
 
@@ -1704,7 +1709,7 @@
                     <div>
                         <span class="exam-label">ATSWA EXAMINATION</span>
                         <h2>${escapeExamHTML(exam.subject)}</h2>
-                        <p>Paper ${escapeExamHTML(exam.paper_number)} Ãƒâ€šÃ‚Â· ${escapeExamHTML(exam.total_marks)} marks</p>
+                        <p>Paper ${escapeExamHTML(exam.paper_number)} Ã‚Â· ${escapeExamHTML(exam.total_marks)} marks</p>
                     </div>
                     <div class="exam-clock" id="examClock" aria-live="off">${formatExamTime(duration)}</div>
                 </header>
@@ -2084,7 +2089,7 @@
         const rows = (result.question_results || []).map(item => `
             <article class="exam-result-question">
                 <div class="exam-question-heading">
-                    <strong>Section ${escapeExamHTML(item.section)} Ãƒâ€šÃ‚Â· Question ${escapeExamHTML(item.question_number)}</strong>
+                    <strong>Section ${escapeExamHTML(item.section)} Ã‚Â· Question ${escapeExamHTML(item.question_number)}</strong>
                     <span>${escapeExamHTML(item.awarded_marks)} / ${escapeExamHTML(item.maximum_marks)} marks</span>
                 </div>
                 <p>${escapeExamHTML(item.feedback || "No additional feedback.")}</p>
@@ -2096,7 +2101,7 @@
             <div class="exam-start-card exam-results-card">
                 <span class="exam-label">EXAMINATION RESULTS</span>
                 <h1>${escapeExamHTML(result.performance)}</h1>
-                <p>${escapeExamHTML(result.subject)} Ãƒâ€šÃ‚Â· Paper ${escapeExamHTML(result.paper_number)}</p>
+                <p>${escapeExamHTML(result.subject)} Ã‚Â· Paper ${escapeExamHTML(result.paper_number)}</p>
 
                 <div class="exam-score">
                     <strong>${escapeExamHTML(result.percentage)}%</strong>

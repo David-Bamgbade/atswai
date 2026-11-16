@@ -3,7 +3,12 @@ import asyncio
 import time
 from difflib import SequenceMatcher
 
-from config import GEMINI_API_KEY
+from config import (
+    GEMINI_API_KEY,
+    METERED_TURN_USERNAME,
+    METERED_TURN_CREDENTIAL,
+    METERED_TURN_URLS,
+)
 from services.conversation_manager import conversation_manager
 
 from pipecat.adapters.llm.schemas.function_schema import FunctionSchema
@@ -279,29 +284,15 @@ async def create_interview_worker(connection, session_id):
     )
 
     ice_servers_config = [
-        {
-            "urls": "stun:stun.relay.metered.ca:80"
-        },
-        {
-            "urls": "turn:global.relay.metered.ca:80",
-            "username": "a427892e0c33b2c8001c1d43",   
-            "credential": "iAEiWjWk+STZ/vGp"  
-        },
-        {
-            "urls": "turn:global.relay.metered.ca:80?transport=tcp",
-            "username": "a427892e0c33b2c8001c1d43",   
-            "credential": "iAEiWjWk+STZ/vGp"  
-        },
-        {
-            "urls": "turn:global.relay.metered.ca:443",
-            "username": "a427892e0c33b2c8001c1d43",   
-            "credential": "iAEiWjWk+STZ/vGp"  
-        },
-        {
-            "urls": "turns:global.relay.metered.ca:443?transport=tcp",
-            "username": "a427892e0c33b2c8001c1d43",
-            "credential": "iAEiWjWk+STZ/vGp"
-        }
+        {"urls": "stun:stun.relay.metered.ca:80"},
+        *[
+            {
+                "urls": url,
+                "username": METERED_TURN_USERNAME,
+                "credential": METERED_TURN_CREDENTIAL,
+            }
+            for url in METERED_TURN_URLS
+        ],
     ]
 
     transport = SmallWebRTCTransport(

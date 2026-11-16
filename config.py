@@ -31,3 +31,15 @@ GEMINI_LIVE_MODELS = [
 
 MODEL_NAME = GEMINI_MODELS[0]
 
+
+METERED_TURN_USERNAME = os.getenv("METERED_TURN_USERNAME")
+METERED_TURN_CREDENTIAL = os.getenv("METERED_TURN_CREDENTIAL")
+
+METERED_TURN_URLS = [
+    url.strip()
+    for url in os.getenv(
+        "METERED_TURN_URLS",
+        "turn:global.relay.metered.ca:80,turn:global.relay.metered.ca:80?transport=tcp,turn:global.relay.metered.ca:443,turns:global.relay.metered.ca:443?transport=tcp"
+    ).split(",")
+    if url.strip()
+]

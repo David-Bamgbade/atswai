@@ -1,4 +1,4 @@
-﻿import json
+import json
 import logging
 
 from asgiref.wsgi import WsgiToAsgi
@@ -8,6 +8,12 @@ from services.pipecat_voice_manager import pipecat_voice_manager
 from services.pipecat_interview_worker import create_interview_worker
 from pipecat.transports.smallwebrtc.connection import SmallWebRTCConnection
 from aiortc.sdp import candidate_from_sdp
+from config import (
+    METERED_TURN_USERNAME,
+    METERED_TURN_CREDENTIAL,
+    METERED_TURN_URLS,
+)
+from pipecat.transports.smallwebrtc.connection import IceServer
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("asgi")
@@ -298,7 +304,19 @@ class ASGIRouter:
                 })
                 return
 
-            connection = SmallWebRTCConnection()
+            ice_servers = [
+                IceServer(urls="stun:stun.relay.metered.ca:80"),
+                *[
+                    IceServer(
+                        urls=url,
+                        username=METERED_TURN_USERNAME,
+                        credential=METERED_TURN_CREDENTIAL,
+                    )
+                    for url in METERED_TURN_URLS
+                ],
+            ]
+
+            connection = SmallWebRTCConnection(ice_servers=ice_servers)
 
             await connection.initialize(
                 offer["sdp"],
@@ -389,6 +407,53 @@ class ASGIRouter:
         ):
             return await self.handle_webrtc_candidate(receive, send)
 
+        if (
+            scope["type"] == "http"
+            and scope.get("method") == "GET"
+            and scope.get("path") == "/api/voice/ice-servers"
+        ):
+            if not METERED_TURN_USERNAME or not METERED_TURN_CREDENTIAL:
+                payload = {
+                    "success": False,
+                    "error": "TURN credentials are not configured."
+                }
+                status = 503
+            else:
+                ice_servers = [
+                    {"urls": "stun:stun.relay.metered.ca:80"},
+                    *[
+                        {
+                            "urls": url,
+                            "username": METERED_TURN_USERNAME,
+                            "credential": METERED_TURN_CREDENTIAL,
+                        }
+                        for url in METERED_TURN_URLS
+                    ],
+                ]
+
+                payload = {
+                    "success": True,
+                    "iceServers": ice_servers
+                }
+                status = 200
+
+            body = json.dumps(payload).encode("utf-8")
+
+            await send({
+                "type": "http.response.start",
+                "status": status,
+                "headers": [
+                    (b"content-type", b"application/json"),
+                    (b"content-length", str(len(body)).encode("ascii")),
+                    (b"cache-control", b"no-store"),
+                ]
+            })
+
+            await send({
+                "type": "http.response.body",
+                "body": body
+            })
+            return
         return await self.http_application(scope, receive, send)
 
 
@@ -398,4 +463,5 @@ asgi_app = ASGIRouter(
     http_application=http_app,
     websocket_application=interview_voice_gateway
 )
+
 
