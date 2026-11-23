@@ -170,7 +170,7 @@ Return this exact JSON structure:
       "feedback": "Brief feedback",
       "part_scores": [
         {{
-          "part": "a",
+          "part_id": "B-Q2-P01",
           "awarded_marks": 0,
           "feedback": "Brief feedback"
         }}
@@ -180,7 +180,11 @@ Return this exact JSON structure:
 }}
 
 For short-answer questions, part_scores may be an empty array.
-For structured questions, include every allocated part.
+For structured questions:
+- Return every supplied part_id exactly once.
+- Copy each part_id exactly as supplied. Never invent or modify IDs.
+- Do not use the human-readable part label as an identifier.
+- Award marks only within that part's allocated maximum.
 """
 
         response = await gemini_service.generate(prompt)
@@ -444,23 +448,67 @@ For structured questions, include every allocated part.
             if not isinstance(part_scores, list):
                 raise ValueError("Invalid structured marking breakdown.")
 
-            # Validate every structured-question part against its
-            # allocated maximum marks.
+            # Validate structured-question marking using application IDs.
             if item["question_type"] == "structured":
                 sub_questions = item.get("sub_questions", [])
+                marking_guide = item.get("marking_guide", [])
 
                 part_limits = {}
+                labels_by_id = {}
 
                 for sub_question in sub_questions:
+                    if not isinstance(sub_question, dict):
+                        raise ValueError("Invalid structured question part.")
+
+                    part_id = str(sub_question.get("part_id", "")).strip()
                     part_name = str(sub_question.get("part", "")).strip()
 
-                    if not part_name or part_name in part_limits:
+                    if (
+                        not part_id
+                        or not part_name
+                        or part_id in part_limits
+                        or part_name in labels_by_id.values()
+                    ):
                         raise ValueError(
-                            f"Invalid or duplicate part in question {key[1]}."
+                            f"Invalid or duplicate part identity in question {key[1]}."
                         )
 
-                    part_limits[part_name] = float(
-                        sub_question.get("marks", 0)
+                    part_maximum = float(sub_question.get("marks", 0))
+
+                    if not math.isfinite(part_maximum) or part_maximum < 0:
+                        raise ValueError(
+                            f"Invalid maximum marks for part {part_name}."
+                        )
+
+                    part_limits[part_id] = part_maximum
+                    labels_by_id[part_id] = part_name
+
+                # Confirm the marking guide uses the same IDs and labels.
+                guide_ids = set()
+
+                for guide_entry in marking_guide:
+                    if not isinstance(guide_entry, dict):
+                        raise ValueError("Invalid marking-guide entry.")
+
+                    guide_id = str(guide_entry.get("part_id", "")).strip()
+                    guide_label = str(guide_entry.get("part", "")).strip()
+
+                    if (
+                        not guide_id
+                        or guide_id not in part_limits
+                        or guide_id in guide_ids
+                        or guide_label != labels_by_id[guide_id]
+                    ):
+                        raise ValueError(
+                            f"Question and marking-guide parts do not match "
+                            f"for question {key[1]}."
+                        )
+
+                    guide_ids.add(guide_id)
+
+                if guide_ids != set(part_limits):
+                    raise ValueError(
+                        f"Marking guide is missing parts in question {key[1]}."
                     )
 
                 returned_parts = {}
@@ -469,42 +517,42 @@ For structured questions, include every allocated part.
                     if not isinstance(part_score, dict):
                         raise ValueError("Invalid part marking entry.")
 
-                    part_name = str(
-                        part_score.get("part", "")
-                    ).strip()
+                    part_id = str(part_score.get("part_id", "")).strip()
 
-                    if part_name not in part_limits:
+                    if part_id not in part_limits:
                         raise ValueError(
-                            f"Unexpected marking part in question {key[1]}."
+                            f"Unexpected part ID in question {key[1]}."
                         )
 
-                    if part_name in returned_parts:
+                    if part_id in returned_parts:
                         raise ValueError(
-                            f"Duplicate marking result for part {part_name}."
+                            f"Duplicate marking result for part ID {part_id}."
                         )
 
                     part_awarded = float(
                         part_score.get("awarded_marks", 0)
                     )
-
-                    part_maximum = part_limits[part_name]
+                    part_maximum = part_limits[part_id]
 
                     if (
                         not math.isfinite(part_awarded)
                         or not math.isfinite(part_maximum)
-                        or part_maximum < 0
                     ):
                         raise ValueError(
-                            f"Invalid numeric marks for part {part_name}."
+                            f"Invalid numeric marks for part "
+                            f"{labels_by_id[part_id]}."
                         )
 
                     if not (0 <= part_awarded <= part_maximum):
                         raise ValueError(
-                            f"Invalid marks for part {part_name} "
+                            f"Invalid marks for part {labels_by_id[part_id]} "
                             f"in question {key[1]}."
                         )
 
-                    returned_parts[part_name] = part_awarded
+                    returned_parts[part_id] = part_awarded
+
+                    # Restore the human-readable label for the existing UI.
+                    part_score["part"] = labels_by_id[part_id]
 
                 if set(returned_parts) != set(part_limits):
                     raise ValueError(
